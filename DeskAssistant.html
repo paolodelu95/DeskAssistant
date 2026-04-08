@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weather by City - Open Meteo</title>
+  <title>Desk Assistant</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,6 +17,20 @@
 
     h1 {
       color: #333;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .settings {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      margin-right: 20px;
+      display: none;
     }
 
     .weather-card {
@@ -33,7 +47,7 @@
     button {
       padding: 10px;
       margin: 5px;
-      border-radius: 5px;
+      border-radius: 20px;
       border: 1px solid #ccc;
     }
 
@@ -50,16 +64,22 @@
 </head>
 
 <body>
+  <div id="Settings" class ="settings">
+    <button onclick="toggleSettings()">Set City</button>
+  </div>
+  <h1>Desk Assistant</h1>
 
-  <h1>Weather by City</h1>
-  <input type="text" id="cityInput" placeholder="Enter city name">
-  <button onclick="getWeather()">Get Weather</button>
+  <div id="headerRow" class="header-row" style="display:block;">
+    <input type="text" id="cityInput" placeholder="Enter city name">
+    <button onclick="getWeather()">Select city</button>
+  </div>
 
   <div id="weatherResult" class="weather-card" style="display:none;">
     <h2 id="cityName"></h2>
     <p><strong>Temperature:</strong> <span id="temperature"></span>°C</p>
     <p><strong>Wind Speed:</strong> <span id="windSpeed"></span> km/h</p>
     <p><strong>Description:</strong> <span id="weatherDescription"></span></p>
+    <p><span id="icon"></span></p>
   </div>
 
   <script>
@@ -94,44 +114,92 @@
         document.getElementById('temperature').textContent = temperature;
         document.getElementById('windSpeed').textContent = windspeed;
         document.getElementById('weatherDescription').textContent = weatherDescription;
+        document.getElementById('icon').textContent = getEmojiForWeather(weatherDescription); // Placeholder for emoji
 
         document.getElementById('weatherResult').style.display = 'block';
+        document.getElementById('headerRow').style.display = 'none';
+        document.getElementById('Settings').style.display = 'block';
 
       } catch (error) {
         console.error(error);
         alert("Error fetching weather data.");
       }
     }
-      function getWeatherDescriptionFromCode(weatherCode) {
-        const weatherCodes = {
-          0: "Clear sky",
-          1: "Mainly clear",
-          2: "Partly cloudy",
-          3: "Overcast",
-          45: "Fog",
-          48: "Depositing rime fog",
-          51: "Light drizzle",
-          53: "Moderate drizzle",
-          55: "Dense drizzle",
-          56: "Light freezing drizzle",
-          57: "Dense freezing drizzle",
-          61: "Slight rain",
-          63: "Moderate rain",
-          65: "Heavy rain",
-          66: "Light freezing rain",
-          67: "Heavy freezing rain",
-          71: "Slight snow fall",
-          73: "Moderate snow fall",
-          75: "Heavy snow fall",
-          77: "Snow grains",
-          80: "Slight rain showers",
-          81: "Moderate rain showers",
-          82: "Violent rain showers",
-          85: "Slight snow showers",
-          86: "Heavy snow showers"
-        };
-        return weatherCodes[weatherCode] || "Unknown weather code";
+    function getWeatherDescriptionFromCode(weatherCode) {
+      const weatherCodes = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Fog",
+        48: "Depositing rime fog",
+        51: "Light drizzle",
+        53: "Moderate drizzle",
+        55: "Dense drizzle",
+        56: "Light freezing drizzle",
+        57: "Dense freezing drizzle",
+        61: "Slight rain",
+        63: "Moderate rain",
+        65: "Heavy rain",
+        66: "Light freezing rain",
+        67: "Heavy freezing rain",
+        71: "Slight snow fall",
+        73: "Moderate snow fall",
+        75: "Heavy snow fall",
+        77: "Snow grains",
+        80: "Slight rain showers",
+        81: "Moderate rain showers",
+        82: "Violent rain showers",
+        85: "Slight snow showers",
+        86: "Heavy snow showers"
+      };
+      return weatherCodes[weatherCode] || "Unknown weather code";
+    }
+    function toggleSettings() {
+      const settings = document.getElementById('Settings');
+      const headerRow = document.getElementById('headerRow');
+      const weatherResult = document.getElementById('weatherResult');
+
+      if (settings.style.display === 'none') {
+        settings.style.display = 'none';
+        headerRow.style.display = 'none';
+        weatherResult.style.display = 'flex';
+      } else {
+        settings.style.display = 'none';
+        headerRow.style.display = 'flex';
+        weatherResult.style.display = 'none';
       }
+    }
+    function getEmojiForWeather(description) {
+      const emojiMap = {
+        "Clear sky": "☀️",
+        "Mainly clear": "🌤️",
+        "Partly cloudy": "⛅",
+        "Overcast": "☁️",
+        "Fog": "🌫️",
+        "Depositing rime fog": "🌫️",
+        "Light drizzle": "🌦️",
+        "Moderate drizzle": "🌧️",
+        "Dense drizzle": "🌧️",
+        "Light freezing drizzle": "🌧️❄️",
+        "Dense freezing drizzle": "🌧️❄️",
+        "Slight rain": "🌧️",
+        "Moderate rain": "🌧️",
+        "Heavy rain": "🌧️",
+        "Light freezing rain": "🌧️❄️",
+        "Heavy freezing rain": "🌧️❄️",
+        "Slight snow fall": "❄️",
+        "Moderate snow fall": "❄️",
+        "Heavy snow fall": "❄️",
+        "Snow grains": "❄️",
+        "Slight rain showers": "🌦️",
+        "Moderate rain showers": "🌧️",
+        "Violent rain showers": "⛈️",
+        "Slight snow showers": "❄️",
+        "Heavy snow showers": "❄️"
+      };
+      return emojiMap[description] || "";
+    }
   </script>
 
 </body>
