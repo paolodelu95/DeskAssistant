@@ -450,7 +450,57 @@
     }
 
     .bottom-capsule-container {
-      bottom: 40px;
+      bottom: 20px;
+    }
+
+    /* Mobile Scaling Mode Fix */
+    body.compact-mode .time-part {
+      font-size: 4.5rem;
+    }
+
+    body.compact-mode .city-part {
+      font-size: 2.5rem;
+      margin-top: 2px;
+    }
+
+    body.compact-mode .temp-part,
+    body.compact-mode .desc-part,
+    body.compact-mode .date-part {
+      font-size: 1.5rem;
+    }
+
+    body.compact-mode .weather-icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    body.compact-mode .timer-capsule,
+    body.compact-mode .music-capsule {
+      font-size: 1.2rem;
+      padding: 6px 16px;
+      border-radius: 15px;
+    }
+
+    body.compact-mode .timer-capsule svg,
+    body.compact-mode .music-capsule svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    body.compact-mode .top-capsule-container {
+      top: 20px;
+    }
+
+    body.compact-mode .bottom-capsule-container {
+      bottom: 10px;
+    }
+
+    body.compact-mode .fullscreen-weather {
+      padding: 20px;
+    }
+
+    body.compact-mode .info-group {
+      gap: 10px;
     }
 
     .timer-capsule,
@@ -695,10 +745,104 @@
       background: #007e9e;
       color: white;
     }
+
+    .voice-wave-container {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      justify-content: center;
+      height: 60px;
+      padding: 0 40px;
+      border-radius: 40px 40px 0 0;
+      background: rgba(0, 200, 255, 0.2);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 -5px 20px rgba(0, 200, 255, 0.4);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 105;
+      pointer-events: none;
+    }
+
+    .voice-wave-container.active {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .wave-bar {
+      width: 6px;
+      background: #00c8ff;
+      border-radius: 3px;
+      height: 10px;
+      animation: wave 1s infinite alternate ease-in-out;
+    }
+
+    .wave-bar:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    .wave-bar:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+
+    .wave-bar:nth-child(3) {
+      animation-delay: 0.0s;
+    }
+
+    .wave-bar:nth-child(4) {
+      animation-delay: 0.4s;
+    }
+
+    .wave-bar:nth-child(5) {
+      animation-delay: 0.2s;
+    }
+
+    @keyframes wave {
+      0% {
+        height: 10px;
+        opacity: 0.5;
+      }
+
+      100% {
+        height: 40px;
+        opacity: 1;
+      }
+    }
+
+    .mic-feedback {
+      position: absolute;
+      top: -35px;
+      color: white;
+      font-weight: bold;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      font-size: 1.2rem;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mic-feedback.show {
+      opacity: 1;
+    }
   </style>
 </head>
 
 <body>
+  <!-- Interaction Overlay -->
+  <div id="interactionOverlay" onclick="startupPlay()"
+    style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; cursor:pointer;">
+    <svg width="60" height="60" fill="currentColor" viewBox="0 0 16 16" style="margin-bottom:20px;">
+      <path
+        d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z" />
+      <path
+        d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z" />
+    </svg>
+    <h2 style="font-size: 2rem;">Tocca per Avviare</h2>
+    <p style="opacity:0.7">Sblocca il sistema audio del browser</p>
+  </div>
+
   <div id="Settings" class="app-toolbar">
     <button class="circle-btn" title="Alarms & Timers" onclick="openAlarms()">
       <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
@@ -745,6 +889,9 @@
     </div>
     <div class="smart-display-bottom weather-part delay-2">
       <div class="date-part" id="currentDate"></div>
+      <div class="voice-hint-part"
+        style="font-size: 1rem; opacity: 0.6; margin-top: 5px; font-weight: normal; text-align: center;">Pronuncia "Ok
+        Pico" per le interazioni vocali</div>
     </div>
   </div>
 
@@ -758,6 +905,14 @@
         <span>Photo Slideshow</span>
         <label class="switch" title="Toggle Slideshow">
           <input type="checkbox" id="slideshowToggle" onchange="toggleSlideshow(this)" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-item">
+        <span>Compact View (Mobile)</span>
+        <label class="switch" title="Toggle Compact Mode">
+          <input type="checkbox" id="compactModeToggle" onchange="toggleCompactMode(this)">
           <span class="slider"></span>
         </label>
       </div>
@@ -895,6 +1050,15 @@
     </div>
   </div>
 
+  <div id="voiceWave" class="voice-wave-container">
+    <div class="mic-feedback" id="micFeedback">Sto ascoltando...</div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+  </div>
+
   <script>
     let debounceTimer;
     let slideshowInterval = null;
@@ -908,6 +1072,12 @@
     let ringingInterval = null;
 
     document.addEventListener("DOMContentLoaded", () => {
+      // Restore Compact Mode Setting
+      const isCompact = localStorage.getItem('compactMode') === 'true';
+      const compactToggle = document.getElementById('compactModeToggle');
+      if (compactToggle) compactToggle.checked = isCompact;
+      if (isCompact) document.body.classList.add('compact-mode');
+
       const cityInput = document.getElementById('cityInput');
       cityInput.addEventListener('input', () => {
         clearTimeout(debounceTimer);
@@ -1183,6 +1353,12 @@
       document.body.style.color = 'white';
     }
 
+    function toggleCompactMode(checkbox) {
+      if (checkbox.checked) document.body.classList.add('compact-mode');
+      else document.body.classList.remove('compact-mode');
+      localStorage.setItem('compactMode', checkbox.checked);
+    }
+
     function getBackgroundForWeather(description) {
       const desc = description.toLowerCase();
       if (desc.includes("clear")) {
@@ -1219,11 +1395,18 @@
     function openAlarms() { document.getElementById('alarmsModal').style.display = 'flex'; renderAlarms(); renderTimers(); }
     function closeAlarms() { document.getElementById('alarmsModal').style.display = 'none'; }
     function saveAlarms() { localStorage.setItem('savedAlarms', JSON.stringify(alarms)); }
+    function addAlarm(h, m) {
+      const t = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      if (!alarms.find(a => a.time === t)) {
+        alarms.push({ time: t, active: true });
+        alarms.sort((a, b) => a.time.localeCompare(b.time));
+        saveAlarms();
+        renderAlarms();
+      }
+    }
+
     function confirmAlarm() {
-      const h = document.getElementById('alarmH').textContent;
-      const m = document.getElementById('alarmM').textContent;
-      const t = `${h}:${m}`;
-      if (!alarms.find(a => a.time === t)) { alarms.push({ time: t, active: true }); alarms.sort((a, b) => a.time.localeCompare(b.time)); saveAlarms(); renderAlarms(); }
+      addAlarm(document.getElementById('alarmH').textContent, document.getElementById('alarmM').textContent);
       document.getElementById('alarmPicker').style.display = 'none';
     }
     function toggleAlarm(idx, checkbox) { alarms[idx].active = checkbox.checked; saveAlarms(); }
@@ -1359,6 +1542,7 @@
       document.getElementById('bgMusic').volume = musicData.volume;
       document.getElementById('bgMusic').src = stationsList[musicData.station];
       updateStationUI();
+      updateMusicCapsule(); // Ensure UI reflects state on load
     }
 
     document.addEventListener('input', (e) => {
@@ -1396,14 +1580,15 @@
         isPlaying = false;
         btn.innerHTML = '&#9658;'; // Play symbol
         homeIcon.classList.remove('music-playing');
+        updateMusicCapsule();
       } else {
         audio.play().then(() => {
           isPlaying = true;
           btn.innerHTML = '&#10074;&#10074;'; // Pause symbol
           homeIcon.classList.add('music-playing');
+          updateMusicCapsule();
         }).catch(e => console.log('Audio error:', e));
       }
-      updateMusicCapsule();
     }
 
     function updateMusicCapsule() {
@@ -1561,6 +1746,184 @@
     updateClock();
     setInterval(updateClock, 1000);
     initMusic();
+
+    function startupPlay() {
+      const overlay = document.getElementById('interactionOverlay');
+      if (overlay) overlay.style.display = 'none';
+
+      // Sblocca HTML5 Audio
+      const audio = document.getElementById('bgMusic');
+      audio.play().then(() => {
+        audio.pause();
+      }).catch(e => console.log('Audio init suppressed:', e));
+
+      // Sblocca AudioContext (Sveglie)
+      try {
+        const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (tempCtx.state === 'suspended') tempCtx.resume();
+      } catch (e) {}
+    }
+
+    // --- VOICE ASSISTANT LOGIC (ALWAYS-ON WAKE WORD) ---
+    let recognition;
+    let isAwake = false;
+    let awakeTimeout = null;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechAct = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechAct();
+      recognition.lang = 'it-IT';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = function () {
+        console.log("Listening in background...");
+      };
+
+      recognition.onresult = function (event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const trans = event.results[i][0].transcript.toLowerCase();
+          if (event.results[i].isFinal) {
+            finalTranscript += trans;
+          } else {
+            interimTranscript += trans;
+          }
+        }
+
+        const currentText = (finalTranscript + ' ' + interimTranscript).trim();
+
+        if (!isAwake) {
+          if (currentText.match(/(ok|ehi|hey)\s*pic(?:o|co)/i)) {
+            activateWakeWord();
+          }
+        }
+
+        if (isAwake) {
+          // If we have a final transcript, process it as a command
+          if (finalTranscript) {
+            let cleanCommand = finalTranscript.replace(/((?:ok|ehi|hey)\s*pic(?:o|co))/gi, '').trim();
+            if (cleanCommand.length > 2) {
+              processVoiceCommand(cleanCommand);
+              deactivateWakeWord();
+            } else {
+               resetAwakeTimeout();
+            }
+          } else {
+            // Re-extend the timeout while they are speaking
+            resetAwakeTimeout();
+          }
+        }
+      };
+
+      recognition.onerror = function (event) {
+        console.warn("Speech error: " + event.error);
+      };
+
+      recognition.onend = function () {
+        // Keep-Alive loop
+        if (!isAwake) {
+          try { recognition.start(); } catch (e) { }
+        }
+      };
+
+      // Auto-start on load
+      setTimeout(() => { try { recognition.start(); } catch (e) { } }, 1000);
+    }
+
+    function activateWakeWord() {
+      isAwake = true;
+      const wave = document.getElementById('voiceWave');
+      const feedback = document.getElementById('micFeedback');
+      if (wave) wave.classList.add('active');
+      if (feedback) {
+        feedback.textContent = "In Ascolto...";
+        feedback.classList.add('show');
+      }
+      resetAwakeTimeout();
+    }
+
+    function deactivateWakeWord() {
+      isAwake = false;
+      const wave = document.getElementById('voiceWave');
+      const feedback = document.getElementById('micFeedback');
+      if (wave) wave.classList.remove('active');
+      if (feedback) feedback.classList.remove('show');
+      if (awakeTimeout) clearTimeout(awakeTimeout);
+
+      // Force restart recognition context to clean slate
+      try { recognition.stop(); } catch (e) { }
+    }
+
+    function resetAwakeTimeout() {
+      if (awakeTimeout) clearTimeout(awakeTimeout);
+      awakeTimeout = setTimeout(() => {
+        if (isAwake) deactivateWakeWord();
+      }, 5000);
+    }
+
+    function processVoiceCommand(cmd) {
+      let handled = false;
+
+      // 1. Sveglie
+      const alarmMatch = cmd.match(/(?:sveglia|allarme).*?(?:alle|le)?\s*(\d{1,2})(?:\s*(?:e|:)\s*(\d{1,2})|(?:\s*e\s*)?(mezza|mezzo|quarto))?/);
+      if (alarmMatch && !handled) {
+        let h = parseInt(alarmMatch[1]);
+        let mStr = alarmMatch[2];
+        let wordM = alarmMatch[3];
+        let m = 0;
+        if (mStr) m = parseInt(mStr);
+        else if (wordM === 'mezza' || wordM === 'mezzo') m = 30;
+        else if (wordM === 'quarto') m = 15;
+
+        addAlarm(h, m);
+        handled = true;
+      }
+
+      // 2. Timer
+      const timerMatchMin = cmd.match(/(\d+)\s*minut[io]/);
+      const timerMatchSec = cmd.match(/(\d+)\s*second[io]/);
+      if ((timerMatchMin || timerMatchSec) && (cmd.includes('timer') || cmd.includes('conto alla rovescia') || cmd.includes('tempo')) && !handled) {
+        let mins = timerMatchMin ? parseInt(timerMatchMin[1]) : 0;
+        let secs = timerMatchSec ? parseInt(timerMatchSec[1]) : 0;
+        let totalSecs = (mins * 60) + secs;
+        if (totalSecs > 0) startTimer(totalSecs);
+        handled = true;
+      }
+
+      // 3. Musica
+      if ((cmd.includes('musica') || cmd.includes('radio') || cmd.includes('riproduci')) && !handled) {
+        if (cmd.includes('chill')) { setStation('chill'); if (!isPlaying) toggleMusic(); handled = true; }
+        else if (cmd.includes('ambient')) { setStation('ambient'); if (!isPlaying) toggleMusic(); handled = true; }
+        else if (cmd.includes('jazz')) { setStation('jazz'); if (!isPlaying) toggleMusic(); handled = true; }
+        else if (cmd.includes('lush')) { setStation('lush'); if (!isPlaying) toggleMusic(); handled = true; }
+        else if (cmd.includes('space') && cmd.includes('deep')) { setStation('deepspace'); if (!isPlaying) toggleMusic(); handled = true; }
+        else if (cmd.includes('space')) { setStation('space'); if (!isPlaying) toggleMusic(); handled = true; }
+        else if (!isPlaying) { toggleMusic(); handled = true; }
+      }
+
+      // 4. Termina / Stop
+      if ((cmd.includes('stop') || cmd.includes('ferma') || cmd.includes('spegni') || cmd.includes('basta')) && !handled) {
+        if (ringingInterval) {
+          stopRingtone();
+        } else if (isPlaying) {
+          toggleMusic();
+        } else if (activeTimers.length > 0) {
+          activeTimers.sort((a, b) => a.remaining - b.remaining);
+          stopTimer(activeTimers[0].id);
+        }
+        handled = true;
+      }
+
+      if (!handled) {
+        document.getElementById('micFeedback').textContent = "Non ho capito...";
+        document.getElementById('micFeedback').classList.add('show');
+        setTimeout(() => { if (!isAwake) document.getElementById('micFeedback').classList.remove('show'); }, 2000);
+      }
+    }
   </script>
 
 </body>
