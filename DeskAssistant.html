@@ -384,6 +384,32 @@
       font-weight: bold;
       border: 1px solid rgba(0, 0, 0, 0.1);
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: #999;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 5px;
+      line-height: 1;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .delete-btn:hover {
+      color: #ff4d4d;
+      background: rgba(255, 77, 77, 0.1);
+    }
+
+    .alarm-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
     }
 
     .timer-pill:hover {
@@ -1204,8 +1230,25 @@
     function renderAlarms() {
       const c = document.getElementById('alarmsList'); c.innerHTML = '';
       alarms.forEach((al, i) => {
-        c.innerHTML += `<div class="alarm-item"><span class="alarm-time">${al.time}</span><label class="switch"><input type="checkbox" onchange="toggleAlarm(${i}, this)" ${al.active ? 'checked' : ''}><span class="slider"></span></label></div>`;
+        c.innerHTML += `
+          <div class="alarm-item">
+            <span class="alarm-time">${al.time}</span>
+            <div class="alarm-controls">
+              <label class="switch">
+                <input type="checkbox" onchange="toggleAlarm(${i}, this)" ${al.active ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+              <button class="delete-btn" onclick="removeAlarm(${i})" title="Delete Alarm">&times;</button>
+            </div>
+          </div>`;
       });
+    }
+    function removeAlarm(idx) {
+      if (confirm("Delete this alarm?")) {
+        alarms.splice(idx, 1);
+        saveAlarms();
+        renderAlarms();
+      }
     }
 
     function saveTimers() { localStorage.setItem('savedTimers', JSON.stringify(timers)); }
@@ -1230,9 +1273,13 @@
       c.innerHTML = '';
       actC.innerHTML = '';
 
-      timers.forEach((t) => {
+      timers.forEach((t, i) => {
         const labelStr = formatSecondsString(t);
-        c.innerHTML += `<div class="timer-pill" onclick="startTimer(${t})">${labelStr}</div>`;
+        c.innerHTML += `
+          <div class="timer-pill" onclick="startTimer(${t})">
+            ${labelStr}
+            <span class="delete-btn" onclick="event.stopPropagation(); removeTimer(${i})" title="Delete recent timer">&times;</span>
+          </div>`;
       });
 
       const nowMs = Date.now();
@@ -1245,6 +1292,14 @@
                ${actLabel} <span style="margin-left: 5px; color:rgba(255,255,255,0.7)">&times;</span>
              </div>`;
       });
+    }
+
+    function removeTimer(idx) {
+      if (confirm("Delete this saved timer?")) {
+        timers.splice(idx, 1);
+        saveTimers();
+        renderTimers();
+      }
     }
 
     function formatSecondsString(s) {
