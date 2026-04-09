@@ -489,6 +489,18 @@
       margin-bottom: 20px;
     }
 
+    .weather-icon {
+      width: 30px;
+      height: 30px;
+      color: white;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
     .text-danger {
       color: #ff4d4d !important;
       text-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
@@ -702,7 +714,7 @@
       <div class="city-part" id="cityName"></div>
       <div class="info-group">
         <div class="temp-part"><span id="temperature"></span>°C</div>
-        <div class="desc-part" id="weatherDescription"></div>
+        <div class="desc-part" id="weatherIcon"></div>
       </div>
     </div>
     <div class="smart-display-bottom weather-part delay-2">
@@ -973,6 +985,7 @@
 
         const { temperature, weathercode } = weatherData.current_weather;
         const weatherDescription = getWeatherDescriptionFromCode(weathercode);
+        const iconSVG = getWeatherIconFromCode(weathercode);
         currentDesc = weatherDescription;
 
         // Salva background mode state global handling in local storage
@@ -981,7 +994,7 @@
         // Step 3: Display results
         document.getElementById('cityName').textContent = name;
         document.getElementById('temperature').textContent = Math.round(temperature);
-        document.getElementById('weatherDescription').textContent = weatherDescription;
+        document.getElementById('weatherIcon').innerHTML = iconSVG;
 
         if (!isSlideshowActive) {
           const bgData = getBackgroundForWeather(weatherDescription);
@@ -1045,6 +1058,25 @@
         86: "Heavy snow showers"
       };
       return weatherCodes[weatherCode] || "Unknown weather code";
+    }
+
+    function getWeatherIconFromCode(code) {
+      const sun = `<svg class="weather-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+      const cloudSun = `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M20 12h2M19.07 4.93l-1.41 1.41M15.94 9.5a5.5 5.5 0 1 0-8.44 8.5H16a4 4 0 0 0 0-8h-.06z"></path></svg>`;
+      const cloud = `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+      const fog = `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M7 10h10M5 14h14M8 18h8M18 10a7 7 0 1 0-12 5"></path></svg>`;
+      const rain = `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M16 13v8M8 13v8M12 15v8M20 16.58A5 5 0 0 0 18 10h-1.26A8 8 0 1 0 4 15.25"></path></svg>`;
+      const snow = `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M11 11.5l1 1 1-1M12 4v16M20 12h-16M17.6 17.6l-11.2-11.2M17.6 6.4l-11.2 11.2M9.5 11l1 1-1 1M14.5 11l-1 1 1 1"></path></svg>`;
+      const bolt = `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M19 11h-6l2-7H5l-2 9h6l-2 7 12-9z"></path></svg>`;
+
+      if (code === 0) return sun;
+      if ([1, 2].includes(code)) return cloudSun;
+      if (code === 3) return cloud;
+      if ([45, 48].includes(code)) return fog;
+      if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return rain;
+      if ([71, 73, 75, 77, 85, 86].includes(code)) return snow;
+      if ([95, 96, 99].includes(code)) return bolt;
+      return cloud;
     }
 
     function toggleSettings() {
