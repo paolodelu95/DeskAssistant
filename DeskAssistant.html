@@ -36,19 +36,21 @@
       gap: 10px;
     }
 
-    .settings {
+    .app-toolbar {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 40px;
+      right: 40px;
       z-index: 100;
       display: none;
+      gap: 15px;
     }
 
-    button.settings-btn {
-      background: rgba(255, 255, 255, 0.9);
-      border: none;
-      font-size: 24px;
-      color: #333;
+    button.circle-btn {
+      background: rgba(40, 40, 40, 0.6);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
       padding: 0;
       margin: 0;
       border-radius: 50%;
@@ -57,13 +59,19 @@
       justify-content: center;
       width: 45px;
       height: 45px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-      transition: transform 0.3s ease, background-color 0.2s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      transition: transform 0.3s ease, background 0.2s, box-shadow 0.2s;
     }
 
-    button.settings-btn:hover {
-      background-color: #e2e8f0;
+    button.circle-btn:hover {
+      background: rgba(60, 60, 60, 0.8);
+      transform: scale(1.1);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    button.circle-btn.settings-btn:hover svg {
       transform: rotate(45deg);
+      transition: transform 0.3s ease;
     }
 
     .autocomplete-wrapper {
@@ -276,6 +284,308 @@
       font-size: 1.2rem;
     }
 
+    /* Alarms & Timers Styles */
+    .large-modal {
+      width: 450px;
+      max-width: 90vw;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 20px;
+      max-height: 70vh;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 2rem;
+      color: #333;
+    }
+
+    .add-btn {
+      background: #eee;
+      color: #333;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+    }
+
+    .add-btn:hover {
+      background: #ddd;
+    }
+
+    .divider {
+      height: 1px;
+      background: #ddd;
+      margin: 30px 0;
+    }
+
+    .list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .alarm-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9f9f9;
+      padding: 15px 20px;
+      border-radius: 12px;
+    }
+
+    .alarm-time {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .timers-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-content: flex-start;
+    }
+
+    .timer-pill {
+      background: rgba(40, 40, 40, 0.1);
+      color: #333;
+      padding: 12px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .timer-pill:hover {
+      background: rgba(0, 0, 0, 0.2);
+      transform: scale(1.05);
+    }
+
+    .timer-active-large {
+      background: #ff9800 !important;
+      color: white !important;
+      font-size: 1.5rem;
+      border: none;
+      box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+      transform: scale(1.1);
+      margin: 10px 0 20px 10px;
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .timer-active-large:hover {
+      transform: scale(1.15);
+    }
+
+    .top-capsule-container,
+    .bottom-capsule-container {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      z-index: 105;
+      pointer-events: none;
+    }
+
+    .top-capsule-container {
+      top: 40px;
+    }
+
+    .bottom-capsule-container {
+      bottom: 40px;
+    }
+
+    .timer-capsule,
+    .music-capsule {
+      pointer-events: auto;
+      padding: 10px 25px;
+      border-radius: 20px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(40, 40, 40, 0.6);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      transition: transform 0.3s ease, background 0.2s, box-shadow 0.2s;
+    }
+
+    .timer-capsule svg,
+    .music-capsule svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .timer-capsule:hover,
+    .music-capsule:hover {
+      background: rgba(60, 60, 60, 0.8);
+      transform: scale(1.05);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .music-capsule-icon {
+      color: #00c8ff;
+    }
+
+    @keyframes pulse-music {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+      }
+
+      100% {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px rgba(0, 200, 255, 0.8), inset 0 0 10px rgba(0, 200, 255, 0.5);
+      }
+    }
+
+    .music-playing {
+      animation: pulse-music 1s infinite alternate;
+      color: #00c8ff !important;
+    }
+
+    .stations-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+
+    .text-danger {
+      color: #ff4d4d !important;
+      text-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+    }
+
+    @keyframes pulsateCapsule {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
+      }
+
+      100% {
+        transform: scale(1.1);
+        box-shadow: 0 0 35px rgba(255, 20, 20, 1);
+      }
+    }
+
+    .ringing-state {
+      animation: pulsateCapsule 0.6s infinite alternate !important;
+      background: rgba(150, 20, 20, 0.8) !important;
+      border: 1px solid rgba(255, 100, 100, 0.8) !important;
+    }
+
+    /* Switch Style */
+    .touch-picker {
+      display: none;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .picker-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .picker-btn {
+      font-size: 2rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #888;
+      padding: 0 10px;
+    }
+
+    .picker-btn:hover {
+      color: #333;
+    }
+
+    .picker-val {
+      font-size: 3rem;
+      font-weight: bold;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .picker-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .picker-confirm {
+      background: #007e9e;
+      color: white;
+      width: 100%;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      margin: 0;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-100%);
+      }
+
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulsateRed {
+      from {
+        background: rgba(255, 77, 77, 0.9);
+      }
+
+      to {
+        background: rgba(220, 20, 60, 1);
+      }
+    }
+
     /* Switch Style */
     .switch {
       position: relative;
@@ -351,8 +661,30 @@
 </head>
 
 <body>
-  <div id="Settings" class="settings">
-    <button class="settings-btn" onclick="toggleSettings()" title="Select another city">⚙️</button>
+  <div id="Settings" class="app-toolbar">
+    <button class="circle-btn" title="Alarms & Timers" onclick="openAlarms()">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z" />
+        <path
+          d="M6.5 0a.5.5 0 0 0 0 1H7v1.07a7.001 7.001 0 0 0-3.273 12.474l-.602.602a.5.5 0 0 0 .707.708l.746-.746A6.97 6.97 0 0 0 8 16a6.97 6.97 0 0 0 3.422-.892l.746.746a.5.5 0 0 0 .707-.708l-.601-.602A7.001 7.001 0 0 0 9 2.07V1h.5a.5.5 0 0 0 0-1h-3zm1.038 3.018a6.093 6.093 0 0 1 .924 0 6 6 0 1 1-.924 0zM0 3.5c0 .753.333 1.429.86 1.887l.52-.52A1.99 1.99 0 0 1 1 4a2 2 0 1 1 4 0c0 .594-.258 1.13-.67 1.503l.52.52A2.99 2.99 0 0 0 6 4a3 3 0 1 0-6 0zM10.18 5.503l.52-.52A1.99 1.99 0 0 1 11 4a2 2 0 1 1 4 0 2 2 0 0 1-1.38 1.887l.52.52A2.99 2.99 0 0 0 16 4a3 3 0 1 0-5.82 1.503z" />
+      </svg>
+    </button>
+    <button id="musicIconBtn" class="circle-btn" title="Music Center" onclick="openMusic()">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+        <path
+          d="M6 13c0 1.105-1.12 2-2.5 2S1 14.105 1 13c0-1.104 1.12-2 2.5-2s2.5.896 2.5 2zm9-2c0 1.105-1.12 2-2.5 2s-2.5-.895-2.5-2 1.12-2 2.5-2 2.5.895 2.5 2z" />
+        <path fill-rule="evenodd" d="M14 11V2h1v9h-1zM6 3v10H5V3h1z" />
+        <path d="M5 2.905a1 1 0 0 1 .9-.995l8-.8a1 1 0 0 1 1.1.995V3L5 4V2.905z" />
+      </svg>
+    </button>
+    <button class="circle-btn settings-btn" onclick="toggleSettings()" title="Settings">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+        <path
+          d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z" />
+        <path
+          d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z" />
+      </svg>
+    </button>
   </div>
   <h1>Desk Assistant</h1>
 
@@ -396,11 +728,146 @@
     </div>
   </div>
 
+  <!-- Modal Alarms & Timers -->
+  <div id="alarmsModal" class="modal">
+    <div class="modal-content large-modal">
+      <div class="modal-header">
+        <h2 style="margin:0;">Alarms & Timers</h2>
+        <span class="close-modal" onclick="closeAlarms()" style="position:relative; top:0; right:0;">&times;</span>
+      </div>
+      <div class="modal-body">
+
+        <div class="section-title">
+          <h3>Alarms</h3>
+          <button class="add-btn" onclick="openAlarmPicker()">+</button>
+        </div>
+
+        <div id="alarmPicker" class="touch-picker">
+          <div class="picker-row">
+            <div class="picker-col">
+              <button class="picker-btn" onclick="adjPicker('alarmH', 1)">&#9650;</button>
+              <span class="picker-val" id="alarmH">07</span>
+              <button class="picker-btn" onclick="adjPicker('alarmH', -1)">&#9660;</button>
+            </div>
+            <span class="picker-val">:</span>
+            <div class="picker-col">
+              <button class="picker-btn" onclick="adjPicker('alarmM', 1)">&#9650;</button>
+              <span class="picker-val" id="alarmM">30</span>
+              <button class="picker-btn" onclick="adjPicker('alarmM', -1)">&#9660;</button>
+            </div>
+          </div>
+          <button class="picker-confirm" onclick="confirmAlarm()">Save Alarm</button>
+        </div>
+
+        <div id="alarmsList" class="list-container"></div>
+
+        <div class="divider"></div>
+
+        <div class="section-title">
+          <h3>Timers</h3>
+          <button class="add-btn" onclick="openTimerPicker()">+</button>
+        </div>
+
+        <div id="timerPicker" class="touch-picker">
+          <div class="picker-row">
+            <div class="picker-col">
+              <span style="font-size:0.8rem;color:#888;">H</span>
+              <button class="picker-btn" onclick="adjPicker('timerH', 1)">&#9650;</button>
+              <span class="picker-val" id="timerH">00</span>
+              <button class="picker-btn" onclick="adjPicker('timerH', -1)">&#9660;</button>
+            </div>
+            <span class="picker-val">:</span>
+            <div class="picker-col">
+              <span style="font-size:0.8rem;color:#888;">M</span>
+              <button class="picker-btn" onclick="adjPicker('timerM', 1)">&#9650;</button>
+              <span class="picker-val" id="timerM">05</span>
+              <button class="picker-btn" onclick="adjPicker('timerM', -1)">&#9660;</button>
+            </div>
+            <span class="picker-val">:</span>
+            <div class="picker-col">
+              <span style="font-size:0.8rem;color:#888;">S</span>
+              <button class="picker-btn" onclick="adjPicker('timerS', 1)">&#9650;</button>
+              <span class="picker-val" id="timerS">00</span>
+              <button class="picker-btn" onclick="adjPicker('timerS', -1)">&#9660;</button>
+            </div>
+          </div>
+          <button class="picker-confirm" onclick="confirmTimer()">Save Timer</button>
+        </div>
+
+        <div id="activeTimerContainer"></div>
+        <div id="timersList" class="timers-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Music -->
+  <div id="musicModal" class="modal">
+    <div class="modal-content" style="width: 400px; padding: 0;">
+      <div class="modal-header">
+        <h2 style="margin:0;">Music Center</h2>
+        <span class="close-modal" onclick="closeMusic()" style="position:relative; top:0; right:0;">&times;</span>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+
+        <div class="stations-container">
+          <div class="timer-pill" id="station-chill" onclick="setStation('chill')">Chillout</div>
+          <div class="timer-pill" id="station-ambient" onclick="setStation('ambient')">Ambient</div>
+          <div class="timer-pill" id="station-jazz" onclick="setStation('jazz')">Jazz</div>
+          <div class="timer-pill" id="station-lush" onclick="setStation('lush')">Lush</div>
+          <div class="timer-pill" id="station-deepspace" onclick="setStation('deepspace')">DeepSpace</div>
+          <div class="timer-pill" id="station-space" onclick="setStation('space')">SpaceStation</div>
+        </div>
+
+        <button id="playPauseBtn" class="circle-btn"
+          style="width: 100px; height: 100px; font-size: 2.5rem; margin: 30px auto;" onclick="toggleMusic()">
+          &#9658;
+        </button>
+
+        <div style="margin-top: 20px; padding: 0 40px;">
+          <label style="display:block; margin-bottom: 10px; font-weight: bold; font-size: 1.2rem;">Volume</label>
+          <input type="range" id="musicVolume" min="0" max="1" step="0.05" style="width: 100%; cursor: pointer;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <audio id="bgMusic" src=""></audio>
+
+  <div class="top-capsule-container">
+    <!-- Timer Capsule -->
+    <div id="homeTimerCapsule" class="timer-capsule" style="display:none;" onclick="handleCapsuleClick()">
+      <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z" />
+        <path
+          d="M6.5 0a.5.5 0 0 0 0 1H7v1.07a7.001 7.001 0 0 0-3.273 12.474l-.602.602a.5.5 0 0 0 .707.708l.746-.746A6.97 6.97 0 0 0 8 16a6.97 6.97 0 0 0 3.422-.892l.746.746a.5.5 0 0 0 .707-.708l-.601-.602A7.001 7.001 0 0 0 9 2.07V1h.5a.5.5 0 0 0 0-1h-3zm1.038 3.018a6.093 6.093 0 0 1 .924 0 6 6 0 1 1-.924 0zM0 3.5c0 .753.333 1.429.86 1.887l.52-.52A1.99 1.99 0 0 1 1 4a2 2 0 1 1 4 0c0 .594-.258 1.13-.67 1.503l.52.52A2.99 2.99 0 0 0 6 4a3 3 0 1 0-6 0zM10.18 5.503l.52-.52A1.99 1.99 0 0 1 11 4a2 2 0 1 1 4 0 2 2 0 0 1-1.38 1.887l.52.52A2.99 2.99 0 0 0 16 4a3 3 0 1 0-5.82 1.503z" />
+      </svg>
+      <span id="homeTimerText">--:--</span>
+    </div>
+  </div>
+
+  <div class="bottom-capsule-container">
+    <!-- Music Capsule -->
+    <div id="homeMusicCapsule" class="music-capsule" style="display:none;" onclick="openMusic()">
+      <svg class="music-capsule-icon" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M9 13c0 1.105-1.12 2-2.5 2S4 14.105 4 13s1.12-2 2.5-2 2.5.895 2.5 2z" />
+        <path fill-rule="evenodd" d="M9 3v10H8V3h1z" />
+        <path d="M8 2.82a1 1 0 0 1 .804-.98l3-.6A1 1 0 0 1 13 2.22V4L8 5V2.82z" />
+      </svg>
+      <span id="homeMusicText">Chillout</span>
+    </div>
+  </div>
+
   <script>
     let debounceTimer;
     let slideshowInterval = null;
     let isSlideshowActive = true;
     let currentDesc = "";
+
+    // Alarms & Timers State
+    let alarms = JSON.parse(localStorage.getItem('savedAlarms')) || [];
+    let timers = JSON.parse(localStorage.getItem('savedTimers')) || [300, 600, 1800];
+    let activeTimers = JSON.parse(localStorage.getItem('activeTimers')) || [];
+    let ringingInterval = null;
 
     document.addEventListener("DOMContentLoaded", () => {
       const cityInput = document.getElementById('cityInput');
@@ -416,6 +883,25 @@
           document.getElementById('suggestionsList').style.display = 'none';
         }
       });
+
+      // Ripristina l'ultima citta' salvata automaticamente
+      const savedCity = localStorage.getItem('lastCity');
+      if (savedCity) {
+        document.getElementById('headerRow').style.display = 'none';
+        const { latitude, longitude, name } = JSON.parse(savedCity);
+        getWeather(latitude, longitude, name);
+      }
+
+      // Aggiornamento dati meteo automatico invisibile (modalita' screensaver) ogni 15 min
+      setInterval(() => {
+        if (document.getElementById('weatherResult').style.display === 'flex') {
+          const sc = localStorage.getItem('lastCity');
+          if (sc) {
+            const { latitude, longitude, name } = JSON.parse(sc);
+            getWeather(latitude, longitude, name, true);
+          }
+        }
+      }, 15 * 60 * 1000);
     });
 
     async function fetchSuggestions() {
@@ -453,7 +939,7 @@
       }
     }
 
-    async function getWeather(lat, lon, cityName) {
+    async function getWeather(lat, lon, cityName, isSilentUpdate = false) {
       try {
         let latitude = lat;
         let longitude = lon;
@@ -489,6 +975,9 @@
         const weatherDescription = getWeatherDescriptionFromCode(weathercode);
         currentDesc = weatherDescription;
 
+        // Salva background mode state global handling in local storage
+        localStorage.setItem('lastCity', JSON.stringify({ latitude, longitude, name }));
+
         // Step 3: Display results
         document.getElementById('cityName').textContent = name;
         document.getElementById('temperature').textContent = Math.round(temperature);
@@ -509,15 +998,17 @@
         // Nascondi header principale per layout immersivo
         document.querySelector('h1').style.display = 'none';
 
-        // Resetta e avvia animazioni
-        const parts = document.querySelectorAll('.weather-part');
-        parts.forEach(p => p.classList.remove('animate'));
-        void document.body.offsetWidth; // Trigger reflow per forzare riavvio
-        parts.forEach(p => p.classList.add('animate'));
+        if (!isSilentUpdate) {
+          // Resetta e avvia animazioni
+          const parts = document.querySelectorAll('.weather-part');
+          parts.forEach(p => p.classList.remove('animate'));
+          void document.body.offsetWidth; // Trigger reflow per forzare riavvio
+          parts.forEach(p => p.classList.add('animate'));
+        }
 
         document.getElementById('weatherResult').style.display = 'flex';
         document.getElementById('headerRow').style.display = 'none';
-        document.getElementById('Settings').style.display = 'block';
+        document.getElementById('Settings').style.display = 'flex';
 
       } catch (error) {
         console.error(error);
@@ -571,6 +1062,8 @@
       document.getElementById('weatherResult').style.display = 'none';
 
       document.querySelector('h1').style.display = 'block';
+
+      localStorage.removeItem('lastCity'); // Pulisce cache se abbandonata volontariamente
 
       if (!isSlideshowActive) {
         document.body.style.background = '#f0f4f8';
@@ -652,6 +1145,261 @@
       return { bg: "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)", color: "white" };
     }
 
+    // --- ALARMS & TIMERS LOGIC ---
+    function adjPicker(id, delta) {
+      let el = document.getElementById(id);
+      let val = parseInt(el.textContent);
+      let max = (id === 'alarmH' || id === 'timerH') ? 23 : 59;
+      val += delta;
+      if (val < 0) val = max;
+      if (val > max) val = 0;
+      el.textContent = val.toString().padStart(2, '0');
+    }
+    function openAlarmPicker() { const p = document.getElementById('alarmPicker'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
+    function openTimerPicker() { const p = document.getElementById('timerPicker'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
+
+    function openAlarms() { document.getElementById('alarmsModal').style.display = 'flex'; renderAlarms(); renderTimers(); }
+    function closeAlarms() { document.getElementById('alarmsModal').style.display = 'none'; }
+    function saveAlarms() { localStorage.setItem('savedAlarms', JSON.stringify(alarms)); }
+    function confirmAlarm() {
+      const h = document.getElementById('alarmH').textContent;
+      const m = document.getElementById('alarmM').textContent;
+      const t = `${h}:${m}`;
+      if (!alarms.find(a => a.time === t)) { alarms.push({ time: t, active: true }); alarms.sort((a, b) => a.time.localeCompare(b.time)); saveAlarms(); renderAlarms(); }
+      document.getElementById('alarmPicker').style.display = 'none';
+    }
+    function toggleAlarm(idx, checkbox) { alarms[idx].active = checkbox.checked; saveAlarms(); }
+    function renderAlarms() {
+      const c = document.getElementById('alarmsList'); c.innerHTML = '';
+      alarms.forEach((al, i) => {
+        c.innerHTML += `<div class="alarm-item"><span class="alarm-time">${al.time}</span><label class="switch"><input type="checkbox" onchange="toggleAlarm(${i}, this)" ${al.active ? 'checked' : ''}><span class="slider"></span></label></div>`;
+      });
+    }
+
+    function saveTimers() { localStorage.setItem('savedTimers', JSON.stringify(timers)); }
+    function saveActiveTimers() { localStorage.setItem('activeTimers', JSON.stringify(activeTimers)); }
+
+    function confirmTimer() {
+      const h = parseInt(document.getElementById('timerH').textContent);
+      const m = parseInt(document.getElementById('timerM').textContent);
+      const s = parseInt(document.getElementById('timerS').textContent);
+      const total = (h * 3600) + (m * 60) + s;
+      if (total > 0 && !timers.includes(total)) {
+        timers.push(total);
+        timers.sort((a, b) => a - b);
+        saveTimers();
+        renderTimers();
+      }
+      document.getElementById('timerPicker').style.display = 'none';
+    }
+    function renderTimers() {
+      const c = document.getElementById('timersList');
+      const actC = document.getElementById('activeTimerContainer');
+      c.innerHTML = '';
+      actC.innerHTML = '';
+
+      timers.forEach((t) => {
+        const labelStr = formatSecondsString(t);
+        c.innerHTML += `<div class="timer-pill" onclick="startTimer(${t})">${labelStr}</div>`;
+      });
+
+      const nowMs = Date.now();
+      activeTimers.forEach((t) => {
+        const rem = Math.max(0, Math.floor((t.endTime - nowMs) / 1000));
+        const actLabel = formatSecondsString(rem);
+        actC.innerHTML += `
+             <div class="timer-pill timer-active-large" onclick="stopTimer(${t.id})">
+               <svg style="margin-right:-5px;" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z"/><path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07a7.001 7.001 0 0 0-3.273 12.474l-.602.602a.5.5 0 0 0 .707.708l.746-.746A6.97 6.97 0 0 0 8 16a6.97 6.97 0 0 0 3.422-.892l.746.746a.5.5 0 0 0 .707-.708l-.601-.602A7.001 7.001 0 0 0 9 2.07V1h.5a.5.5 0 0 0 0-1h-3zm1.038 3.018a6.093 6.093 0 0 1 .924 0 6 6 0 1 1-.924 0zM0 3.5c0 .753.333 1.429.86 1.887l.52-.52A1.99 1.99 0 0 1 1 4a2 2 0 1 1 4 0c0 .594-.258 1.13-.67 1.503l.52.52A2.99 2.99 0 0 0 6 4a3 3 0 1 0-6 0zM10.18 5.503l.52-.52A1.99 1.99 0 0 1 11 4a2 2 0 1 1 4 0 2 2 0 0 1-1.38 1.887l.52.52A2.99 2.99 0 0 0 16 4a3 3 0 1 0-5.82 1.503z"/></svg>
+               ${actLabel} <span style="margin-left: 5px; color:rgba(255,255,255,0.7)">&times;</span>
+             </div>`;
+      });
+    }
+
+    function formatSecondsString(s) {
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const rem = s % 60;
+      if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${rem.toString().padStart(2, '0')}`;
+      return `${m}:${rem.toString().padStart(2, '0')}`;
+    }
+
+    function formatSeconds(s) { return formatSecondsString(s); }
+
+    function startTimer(s) {
+      activeTimers.push({ id: Date.now() + Math.random(), durationSecs: s, endTime: Date.now() + (s * 1000) });
+      saveActiveTimers();
+      document.getElementById('homeTimerCapsule').style.display = 'flex';
+      renderTimers();
+    }
+
+    function stopTimer(id) {
+      if (!id) {
+        if (activeTimers.length > 0) {
+          activeTimers.sort((a, b) => a.remaining - b.remaining);
+          id = activeTimers[0].id; // Rimuove il primo effettivo visibile nella HUD
+        } else return;
+      }
+      activeTimers = activeTimers.filter(t => t.id !== id);
+      saveActiveTimers();
+      if (activeTimers.length === 0) {
+        document.getElementById('homeTimerCapsule').style.display = 'none';
+        document.getElementById('homeTimerCapsule').classList.remove('text-danger');
+      }
+      renderTimers();
+    }
+
+    function cancelTimerPrompt() { if (confirm("Stop the nearest active timer?")) stopTimer(); }
+
+    // --- MUSIC LOGIC ---
+    let musicData = JSON.parse(localStorage.getItem('musicSettings')) || { station: 'chill', volume: 0.5 };
+    let isPlaying = false;
+    let preAlarmVolume = null; // To store volume before ducking
+    const stationsList = {
+      'chill': 'https://ice1.somafm.com/groovesalad-128-mp3',
+      'ambient': 'https://ice1.somafm.com/dronezone-128-mp3',
+      'jazz': 'https://ice1.somafm.com/secretagent-128-mp3',
+      'lush': 'https://ice1.somafm.com/lush-128-mp3',
+      'deepspace': 'https://ice1.somafm.com/deepspaceone-128-mp3',
+      'space': 'https://ice1.somafm.com/spacestation-128-mp3'
+    };
+
+    function openMusic() { document.getElementById('musicModal').style.display = 'flex'; }
+    function closeMusic() { document.getElementById('musicModal').style.display = 'none'; }
+
+    function initMusic() {
+      const volSlider = document.getElementById('musicVolume');
+      if (volSlider) volSlider.value = musicData.volume;
+      document.getElementById('bgMusic').volume = musicData.volume;
+      document.getElementById('bgMusic').src = stationsList[musicData.station];
+      updateStationUI();
+    }
+
+    document.addEventListener('input', (e) => {
+      if (e.target && e.target.id === 'musicVolume') {
+        musicData.volume = e.target.value;
+        document.getElementById('bgMusic').volume = e.target.value;
+        localStorage.setItem('musicSettings', JSON.stringify(musicData));
+      }
+    });
+
+    function setStation(key) {
+      musicData.station = key;
+      localStorage.setItem('musicSettings', JSON.stringify(musicData));
+      document.getElementById('bgMusic').src = stationsList[key];
+      if (isPlaying) document.getElementById('bgMusic').play().catch(e => console.log(e));
+      updateStationUI();
+      updateMusicCapsule();
+    }
+
+    function updateStationUI() {
+      ['chill', 'ambient', 'jazz', 'lush', 'deepspace', 'space'].forEach(k => {
+        const btn = document.getElementById('station-' + k);
+        if (!btn) return;
+        if (k === musicData.station) btn.style.background = '#007e9e';
+        else btn.style.background = 'rgba(40, 40, 40, 0.1)';
+      });
+    }
+
+    function toggleMusic() {
+      const audio = document.getElementById('bgMusic');
+      const btn = document.getElementById('playPauseBtn');
+      const homeIcon = document.getElementById('musicIconBtn');
+      if (isPlaying) {
+        audio.pause();
+        isPlaying = false;
+        btn.innerHTML = '&#9658;'; // Play symbol
+        homeIcon.classList.remove('music-playing');
+      } else {
+        audio.play().then(() => {
+          isPlaying = true;
+          btn.innerHTML = '&#10074;&#10074;'; // Pause symbol
+          homeIcon.classList.add('music-playing');
+        }).catch(e => console.log('Audio error:', e));
+      }
+      updateMusicCapsule();
+    }
+
+    function updateMusicCapsule() {
+      const cap = document.getElementById('homeMusicCapsule');
+      const text = document.getElementById('homeMusicText');
+      if (isPlaying) {
+        cap.style.display = 'flex';
+        const sName = musicData.station.charAt(0).toUpperCase() + musicData.station.slice(1);
+        text.textContent = sName;
+      } else {
+        cap.style.display = 'none';
+      }
+    }
+
+
+    // --- ALERTS ---
+
+    function handleCapsuleClick() {
+      if (ringingInterval) {
+        stopRingtone();
+      } else {
+        cancelTimerPrompt();
+      }
+    }
+
+    function triggerRingtone() {
+      if (ringingInterval) return; // Già in riproduzione
+
+      // Abbassa volume musica se in riproduzione
+      const audio = document.getElementById('bgMusic');
+      if (isPlaying && audio) {
+        preAlarmVolume = audio.volume;
+        audio.volume = 0.05; // Volume bassissimo
+      }
+
+      playRingtoneSequence();
+      ringingInterval = setInterval(playRingtoneSequence, 2000); // 2 sec pause between loops
+
+      const c = document.getElementById('homeTimerCapsule');
+      c.style.display = 'flex';
+      c.classList.add('ringing-state');
+      document.getElementById('homeTimerText').textContent = "STOP";
+    }
+
+    function stopRingtone() {
+      if (ringingInterval) {
+        clearInterval(ringingInterval);
+        ringingInterval = null;
+      }
+
+      // Ripristina volume musica
+      const audio = document.getElementById('bgMusic');
+      if (audio && preAlarmVolume !== null) {
+        audio.volume = preAlarmVolume;
+        preAlarmVolume = null;
+      }
+
+      const c = document.getElementById('homeTimerCapsule');
+      c.classList.remove('ringing-state');
+      c.style.display = 'none'; // Will be rebuilt by next updateClock tick if other timers exist
+      updateClock(); // Force immediate visual alignment
+    }
+
+    function playRingtoneSequence() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const t = ctx.currentTime;
+        function playTone(freq, start, dur) {
+          const osc = ctx.createOscillator(); const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'sine'; osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.5, start + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+          osc.start(start); osc.stop(start + dur);
+        }
+        playTone(523.25, t, 0.5);       // Do
+        playTone(659.25, t + 0.2, 0.5); // Mi
+        playTone(783.99, t + 0.4, 0.5); // Sol
+        playTone(1046.50, t + 0.6, 1.0); // Do (Alto)
+      } catch (e) { }
+    }
+
     function updateClock() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -661,10 +1409,71 @@
       const dateEl = document.getElementById('currentDate');
       if (timeEl) timeEl.textContent = timeStr;
       if (dateEl) dateEl.textContent = dateStr;
+
+      // Alarms Check (Trigger only at 00 seconds of exact minute)
+      if (now.getSeconds() === 0) {
+        const currentHHMM = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        alarms.forEach((al) => {
+          if (al.active && al.time === currentHHMM) {
+            triggerRingtone();
+            al.active = false; // Prevents re-triggering during the same minute
+            saveAlarms();
+            if (document.getElementById('alarmsModal').style.display === 'flex') renderAlarms();
+          }
+        });
+      }
+
+      // Active Timers Check (Multiple Support)
+      if (activeTimers.length > 0) {
+        const nowMs = Date.now();
+        let needsSave = false;
+
+        activeTimers.forEach(t => {
+          t.remaining = Math.max(0, Math.floor((t.endTime - nowMs) / 1000));
+        });
+
+        // Trigger completed timers
+        const finishedTimers = activeTimers.filter(t => t.remaining <= 0);
+        if (finishedTimers.length > 0) {
+          finishedTimers.forEach(() => triggerRingtone());
+          activeTimers = activeTimers.filter(t => t.remaining > 0);
+          needsSave = true;
+        }
+
+        const c = document.getElementById('homeTimerCapsule');
+
+        // Evita di distruggere l'interfaccia "STOP" e i suoi colori mentre sta suonando
+        if (!ringingInterval) {
+          if (activeTimers.length > 0) {
+            activeTimers.sort((a, b) => a.remaining - b.remaining);
+            const nearest = activeTimers[0];
+
+            c.style.display = 'flex';
+            document.getElementById('homeTimerText').textContent = formatSecondsString(nearest.remaining);
+
+            if (nearest.remaining <= 30) {
+              if (!c.classList.contains('text-danger')) c.classList.add('text-danger');
+            } else {
+              if (c.classList.contains('text-danger')) c.classList.remove('text-danger');
+            }
+          } else {
+            c.style.display = 'none';
+          }
+        }
+
+        if (needsSave || finishedTimers.length > 0) {
+          saveActiveTimers();
+        }
+
+        if (document.getElementById('alarmsModal').style.display === 'flex') renderTimers();
+      } else {
+        if (!ringingInterval) document.getElementById('homeTimerCapsule').style.display = 'none';
+      }
     }
 
     updateClock();
     setInterval(updateClock, 1000);
+    initMusic();
   </script>
 
 </body>
