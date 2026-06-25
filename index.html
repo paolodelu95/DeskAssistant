@@ -2120,7 +2120,8 @@
     function updateClock() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const dateStr = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).format(now);
+      let dateStr = new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }).format(now);
+      dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1); // iniziale maiuscola
 
       const timeEl = document.getElementById('currentTime');
       const dateEl = document.getElementById('currentDate');
