@@ -1128,6 +1128,34 @@
       font-size: 1.3rem;
     }
 
+    /* Vista meteo orizzontale per QUALSIASI landscape (telefono, tablet, desktop):
+       l'ora a sinistra e data/info a destra, così si sfrutta la larghezza.
+       Prima queste regole erano annidate in @media(max-height:500px) e non si
+       applicavano su tablet/desktop in orizzontale (layout a colonna incoerente). */
+    body.landscape .fullscreen-weather {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    body.landscape .smart-display-top {
+      margin-top: 0;
+    }
+
+    body.landscape .smart-display-bottom {
+      align-items: flex-end;
+      text-align: right;
+      margin-bottom: 0;
+      max-width: 48%;
+    }
+
+    body.landscape .time-part {
+      font-size: clamp(3rem, 9vw, 5.5rem);
+    }
+
+    body.landscape .city-part {
+      font-size: clamp(1.6rem, 4.5vw, 2.6rem);
+    }
+
     /* Viewport bassi (telefoni in landscape): compatta il layout in verticale */
     @media (max-height: 500px) {
       .time-part {
@@ -1170,31 +1198,6 @@
 
       .modal-body {
         max-height: 80vh;
-      }
-
-      /* Telefono girato: vista meteo orizzontale che sfrutta la larghezza */
-      body.landscape .fullscreen-weather {
-        flex-direction: row;
-        align-items: center;
-      }
-
-      body.landscape .smart-display-top {
-        margin-top: 0;
-      }
-
-      body.landscape .smart-display-bottom {
-        align-items: flex-end;
-        text-align: right;
-        margin-bottom: 0;
-        max-width: 48%;
-      }
-
-      body.landscape .time-part {
-        font-size: clamp(3rem, 9vw, 5.5rem);
-      }
-
-      body.landscape .city-part {
-        font-size: clamp(1.6rem, 4.5vw, 2.6rem);
       }
     }
   </style>
@@ -1303,6 +1306,17 @@
           <option value="landscape-90">Orizzontale 90°</option>
           <option value="landscape-270">Orizzontale 270°</option>
         </select>
+      </div>
+
+      <div class="setting-item">
+        <span>Voce</span>
+        <select id="voiceSelect" class="mini-select" onchange="setVoice(this.value)" style="max-width:55%;"></select>
+      </div>
+
+      <div class="setting-item">
+        <span>Velocità voce</span>
+        <input type="range" id="rateRange" min="0.7" max="1.2" step="0.05" onchange="setRate(this.value)"
+          class="range-slider" style="flex:1; max-width:45%; margin-left:12px;">
       </div>
 
       <button class="btn-outline" onclick="useMyLocation()" style="width:100%; margin-top:10px;">📍 Usa la mia posizione</button>
@@ -2230,11 +2244,16 @@
     // (es. telefono con rotazione automatica disattivata), ruotiamo via CSS.
     // 'auto' segue il dispositivo; 'portrait', 'landscape-90', 'landscape-270' forzano la vista
     let orientationMode = localStorage.getItem('orientationMode') || 'auto';
-    if (orientationMode === 'landscape') orientationMode = 'landscape-90'; // migrazione vecchio valore
+    if (orientationMode === 'landscape') { // migrazione vecchio valore (anche su disco)
+      orientationMode = 'landscape-90';
+      localStorage.setItem('orientationMode', orientationMode);
+    }
 
     function applyOrientation() {
       const b = document.body;
-      const deviceLandscape = window.matchMedia('(orientation: landscape)').matches;
+      // Confronto diretto delle dimensioni: più affidabile di matchMedia('orientation')
+      // su molti Android/iOS, dove la media query non si aggiorna in tempo.
+      const deviceLandscape = window.innerWidth >= window.innerHeight;
       const wantLandscape = orientationMode === 'landscape-90' || orientationMode === 'landscape-270';
       const wantPortrait = orientationMode === 'portrait';
 
@@ -2271,13 +2290,31 @@
       applyOrientation();
     }
 
+    // iOS/Android riportano spesso dimensioni "stale" subito dopo la rotazione:
+    // ri-applichiamo subito e di nuovo dopo brevi ritardi per intercettare il
+    // valore corretto del viewport.
+    let _orientRaf = null;
+    function scheduleOrientation() {
+      if (_orientRaf) cancelAnimationFrame(_orientRaf);
+      _orientRaf = requestAnimationFrame(applyOrientation);
+      setTimeout(applyOrientation, 150);
+      setTimeout(applyOrientation, 400);
+    }
+
     try {
       const mqOrient = window.matchMedia('(orientation: landscape)');
-      if (mqOrient.addEventListener) mqOrient.addEventListener('change', applyOrientation);
-      else if (mqOrient.addListener) mqOrient.addListener(applyOrientation); // browser più vecchi
+      if (mqOrient.addEventListener) mqOrient.addEventListener('change', scheduleOrientation);
+      else if (mqOrient.addListener) mqOrient.addListener(scheduleOrientation); // browser più vecchi
     } catch (e) {}
-    window.addEventListener('orientationchange', applyOrientation);
+    window.addEventListener('orientationchange', scheduleOrientation);
     window.addEventListener('resize', applyOrientation);
+    // Alcuni dispositivi con auto-rotazione lenta cambiano dimensione senza eventi:
+    // un controllo periodico leggero garantisce l'allineamento del layout.
+    let _lastOrient = window.innerWidth >= window.innerHeight;
+    setInterval(() => {
+      const now = window.innerWidth >= window.innerHeight;
+      if (now !== _lastOrient) { _lastOrient = now; applyOrientation(); }
+    }, 1000);
 
     const orientSelectEl = document.getElementById('orientSelect');
     if (orientSelectEl) orientSelectEl.value = orientationMode;
@@ -2317,6 +2354,18 @@
         if (tempCtx.state === 'suspended') tempCtx.resume();
       } catch (e) {}
 
+      // Scalda il motore di sintesi vocale (su alcuni browser la prima utterance
+      // viene ignorata se non c'è stato un gesto utente prima).
+      try {
+        loadVoices();
+        const warm = new SpeechSynthesisUtterance(' ');
+        warm.volume = 0; window.speechSynthesis.speak(warm);
+      } catch (e) {}
+
+      // Avvia l'ascolto sempre-attivo della wake word dopo il gesto utente:
+      // così il prompt dei permessi del microfono è legato al tap.
+      startMic();
+
       // Rilevamento automatico posizione al primo avvio (nessuna città salvata).
       // Lanciato dopo il tap così il prompt dei permessi è legato a un gesto utente.
       if (!localStorage.getItem('lastCity')) {
@@ -2347,14 +2396,14 @@
       }
     });
 
-    // --- CLAUDE CONVERSATION STATE ---
+    // --- STATO CONVERSAZIONE & VOCE ---
     let conversationHistory = [];
     let isConversationActive = false;
     let conversationTimeout = null;
     let isSpeaking = false;
 
-    const CLAUDE_SYSTEM_PROMPT = `Sei un assistente da cucina intelligente e amichevole chiamato Pico. 
-Rispondi sempre in italiano, in modo conciso e naturale (max 3-4 frasi per risposta, a meno che non serva di più per una ricetta).
+    const CLAUDE_SYSTEM_PROMPT = `Sei un assistente da cucina intelligente e amichevole chiamato Pico.
+Rispondi sempre in italiano, con un tono caldo, naturale e colloquiale, come un amico esperto in cucina. Sii conciso (max 3-4 frasi, a meno che non serva di più per una ricetta).
 Puoi aiutare con: consigli su conservazione degli alimenti, ricette rapide, utilizzo di ingredienti avanzati, conversione unità di misura, suggerimenti culinari.
 
 Quando l'utente vuole impostare un timer, una sveglia, o controllare la musica, rispondi con un JSON speciale nel formato:
@@ -2376,7 +2425,8 @@ REGOLE IMPORTANTI:
     async function askClaude(userMessage) {
       const apiKey = localStorage.getItem('claudeApiKey');
       if (!apiKey) {
-        speak("Non ho una API key configurata. Aprì le impostazioni e inserisci la chiave di Claude.");
+        showAiBubble('Configura la API key di Claude nelle impostazioni');
+        speakThen("Non ho ancora una chiave configurata. Apri le impostazioni e inserisci la chiave di Claude.", endConversation);
         return;
       }
 
@@ -2402,11 +2452,11 @@ REGOLE IMPORTANTI:
         });
 
         if (!response.ok) {
-          const err = await response.json();
+          const err = await response.json().catch(() => ({}));
           console.error('Claude API error:', err);
-          speak("C'è stato un errore nella comunicazione con Claude.");
-          showAiBubble('❌ Errore API');
+          showAiBubble('Errore di comunicazione con Claude');
           conversationHistory.pop();
+          speakThen("C'è stato un errore nella comunicazione con Claude.", () => resumeListening('Riprova pure...'));
           return;
         }
 
@@ -2429,24 +2479,24 @@ REGOLE IMPORTANTI:
         // Testo pulito senza tag <action>
         const cleanText = fullText.replace(/<action>.*?<\/action>/gs, '').trim();
         showAiBubble(cleanText);
-        speak(cleanText, () => {
-          if (!isConversationActive) return;
+        speakThen(cleanText, () => {
+          // Se la conversazione è già stata chiusa nel frattempo, torna comunque
+          // ad ascoltare la wake word: il microfono non deve mai restare morto.
+          if (!isConversationActive) { if (!micDisabled) startMic(); return; }
           if (didAction) {
             // Azione eseguita → chiudi la conversazione, niente domande di follow-up
             endConversation();
           } else {
             // Solo Q&A: resta in ascolto per un'eventuale domanda successiva
-            resetConversationTimeout();
-            setMicFeedback('Dimmi pure...');
-            try { recognition.start(); } catch (e) {}
+            resumeListening('Dimmi pure...');
           }
         });
 
       } catch (err) {
         console.error('Fetch error:', err);
-        speak("Errore di connessione. Controlla la connessione internet.");
-        showAiBubble('❌ Errore di connessione');
+        showAiBubble('Errore di connessione');
         conversationHistory.pop();
+        speakThen("Errore di connessione. Controlla la connessione internet.", () => resumeListening('Riprova pure...'));
       }
     }
 
@@ -2479,22 +2529,75 @@ REGOLE IMPORTANTI:
       document.getElementById('aiBubble').style.display = 'none';
     }
 
-    // Sceglie la migliore voce italiana disponibile, preferendo quelle naturali/Google
-    let cachedItVoice = null;
-    function pickItalianVoice() {
-      const voices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
-      const it = voices.filter(v => /^it/i.test(v.lang));
+    // ===== SINTESI VOCALE (TTS) =====
+    let availableVoices = [];
+    let ttsRate = parseFloat(localStorage.getItem('ttsRate'));
+    if (isNaN(ttsRate)) ttsRate = 1.0;
+    let ttsVoiceURI = localStorage.getItem('ttsVoiceURI') || '';
+
+    function loadVoices() {
+      if (!window.speechSynthesis) return;
+      availableVoices = window.speechSynthesis.getVoices() || [];
+      populateVoiceSelect();
+    }
+    function italianVoices() {
+      return availableVoices.filter(v => /^it/i.test(v.lang));
+    }
+    // Migliore voce italiana disponibile: prima le online/naturali (più umane),
+    // poi le voci di sistema note, infine la prima disponibile.
+    function bestItalianVoice() {
+      const it = italianVoices();
       if (!it.length) return null;
       return it.find(v => /google/i.test(v.name))
           || it.find(v => /(natural|neural|premium|enhanced|wavenet|siri)/i.test(v.name))
-          || it.find(v => /(federica|elsa|alice|luca|giorgio|isabela)/i.test(v.name))
+          || it.find(v => /(federica|elsa|alice|luca|giorgio|isabela|bianca)/i.test(v.name))
           || it[0];
     }
-    if (window.speechSynthesis) {
-      cachedItVoice = pickItalianVoice();
-      // Le voci spesso si caricano in modo asincrono: aggiorna quando disponibili
-      window.speechSynthesis.onvoiceschanged = () => { cachedItVoice = pickItalianVoice(); };
+    function chosenVoice() {
+      if (ttsVoiceURI) {
+        const v = availableVoices.find(x => x.voiceURI === ttsVoiceURI);
+        if (v) return v;
+      }
+      return bestItalianVoice();
     }
+    function populateVoiceSelect() {
+      const sel = document.getElementById('voiceSelect');
+      if (!sel) return;
+      const it = italianVoices();
+      sel.innerHTML = '';
+      if (!it.length) {
+        const o = document.createElement('option');
+        o.value = ''; o.textContent = 'Voce predefinita del sistema';
+        sel.appendChild(o); return;
+      }
+      const best = bestItalianVoice();
+      it.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.voiceURI;
+        o.textContent = v.name.replace(/^(Microsoft|Google)\s*/i, '') + (v === best ? ' (consigliata)' : '');
+        if ((ttsVoiceURI && v.voiceURI === ttsVoiceURI) || (!ttsVoiceURI && v === best)) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+    function setVoice(uri) {
+      ttsVoiceURI = uri;
+      localStorage.setItem('ttsVoiceURI', uri);
+      speak('Ciao, sono Pico, il tuo assistente da cucina.');
+    }
+    function setRate(r) {
+      ttsRate = parseFloat(r) || 1.0;
+      localStorage.setItem('ttsRate', ttsRate);
+    }
+    if (window.speechSynthesis) {
+      loadVoices();
+      // Le voci si caricano spesso in modo asincrono: ricarica quando disponibili
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const rr = document.getElementById('rateRange');
+      if (rr) rr.value = ttsRate;
+      populateVoiceSelect();
+    });
 
     // Rimuove emoji/simboli: la sintesi vocale altrimenti li leggerebbe ad alta voce
     function stripForSpeech(text) {
@@ -2509,53 +2612,103 @@ REGOLE IMPORTANTI:
       return t.replace(/\s{2,}/g, ' ').trim();
     }
 
+    // Keep-alive: Chrome tronca le utterance lunghe (~15s). pause()/resume()
+    // periodici impediscono che la voce si interrompa a metà di una ricetta.
+    let _ttsKeepAlive = null;
     function speak(text, onEndCallback) {
-      if (!window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-
+      if (!window.speechSynthesis) { if (onEndCallback) onEndCallback(); return; }
+      // INVARIANTE: il microfono è sempre spento mentre Pico parla, così non si
+      // sente da solo (causa principale di auto-trigger e accavallamenti).
+      stopMic();
       const clean = stripForSpeech(text);
+      window.speechSynthesis.cancel();
       if (!clean) { if (onEndCallback) onEndCallback(); return; } // niente da leggere (solo emoji)
       isSpeaking = true;
 
       const utter = new SpeechSynthesisUtterance(clean);
       utter.lang = 'it-IT';
-      utter.rate = 1.0;
+      utter.rate = ttsRate;
       utter.pitch = 1.0;
+      const v = chosenVoice();
+      if (v) utter.voice = v;
 
-      if (!cachedItVoice) cachedItVoice = pickItalianVoice();
-      if (cachedItVoice) utter.voice = cachedItVoice;
-
-      utter.onend = () => {
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
         isSpeaking = false;
+        if (_ttsKeepAlive) { clearInterval(_ttsKeepAlive); _ttsKeepAlive = null; }
         if (onEndCallback) onEndCallback();
       };
-      utter.onerror = () => { isSpeaking = false; if (onEndCallback) onEndCallback(); };
+      utter.onend = done;
+      utter.onerror = done;
+
+      if (_ttsKeepAlive) clearInterval(_ttsKeepAlive);
+      _ttsKeepAlive = setInterval(() => {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 9000);
 
       window.speechSynthesis.speak(utter);
+    }
+
+    // Parla SEMPRE con il microfono spento, così Pico non si sente da solo
+    // (era la causa principale degli auto-trigger e degli accavallamenti).
+    function speakThen(text, cb) {
+      stopMic();
+      speak(text, cb);
     }
 
     function setMicFeedback(text) {
       const fb = document.getElementById('micFeedback');
       if (fb) fb.textContent = text;
     }
+    function showVoiceWave(on) {
+      const w = document.getElementById('voiceWave');
+      const fb = document.getElementById('micFeedback');
+      if (w) w.classList.toggle('active', on);
+      if (fb) fb.classList.toggle('show', on);
+    }
+    function setTalkActive(on) {
+      const tb = document.getElementById('talkBtn');
+      if (tb) tb.classList.toggle('talk-active', on);
+    }
 
-    function startConversation() {
+    // --- CICLO DI VITA DELLA CONVERSAZIONE ---
+    function beginConversation() {
+      if (micDisabled) { speak('Microfono non disponibile. Controlla i permessi del browser.'); return; }
       isConversationActive = true;
-      conversationHistory = []; // Nuova conversazione
-      activateWakeWord();
+      conversationHistory = [];
+      showVoiceWave(true);
+      setTalkActive(true);
       setMicFeedback('Dimmi pure...');
-      resetConversationTimeout();
+      // Saluta col mic spento, poi torna in ascolto per il comando vero
+      speakThen('Dimmi pure', () => { resetConversationTimeout(); startMic(); });
     }
 
     function endConversation() {
       isConversationActive = false;
       conversationHistory = [];
-      deactivateWakeWord();
+      if (conversationTimeout) { clearTimeout(conversationTimeout); conversationTimeout = null; }
+      // Interrompe un eventuale TTS in corso così il mic non si riaccende sopra la voce
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      isSpeaking = false;
       hideAiBubble();
-      window.speechSynthesis && window.speechSynthesis.cancel();
-      if (conversationTimeout) clearTimeout(conversationTimeout);
-      const tb = document.getElementById('talkBtn');
-      if (tb) tb.classList.remove('talk-active');
+      showVoiceWave(false);
+      setTalkActive(false);
+      setMicFeedback('');
+      // Torna ad ascoltare la wake word "Ok Pico" (se il mic è disponibile)
+      if (!micDisabled) startMic();
+    }
+
+    function resumeListening(feedback) {
+      if (micDisabled) { setMicFeedback('Microfono non disponibile'); return; }
+      if (!isConversationActive) { startMic(); return; } // wake word, niente conversazione
+      if (feedback) setMicFeedback(feedback);
+      resetConversationTimeout();
+      startMic();
     }
 
     // Push-to-talk: avvia la conversazione col tap, senza dover dire "Ok Pico"
@@ -2564,192 +2717,152 @@ REGOLE IMPORTANTI:
         speak("Microfono non disponibile. Controlla i permessi del browser.");
         return;
       }
-      if (isConversationActive) {
-        endConversation();
-        return;
-      }
-      startConversation();
-      setMicFeedback('Dimmi pure...');
-      const tb = document.getElementById('talkBtn');
-      if (tb) tb.classList.add('talk-active');
-      try { recognition.start(); } catch (e) {}
+      if (isConversationActive) { endConversation(); return; }
+      beginConversation();
     }
 
     function resetConversationTimeout() {
       if (conversationTimeout) clearTimeout(conversationTimeout);
       // Chiude la conversazione dopo 30 secondi di inattività
       conversationTimeout = setTimeout(() => {
-        if (isConversationActive) {
-          endConversation();
-        }
+        if (isConversationActive) endConversation();
       }, 30000);
     }
 
-    // --- VOICE ASSISTANT LOGIC (ALWAYS-ON WAKE WORD) ---
-    let recognition;
-    let isAwake = false;
-    let awakeTimeout = null;
-    let micDisabled = false; // true se il microfono è negato/assente: evita il loop di riavvii
+    // ===== RICONOSCIMENTO VOCALE (wake word sempre-attiva + conversazione) =====
+    // Macchina a stati semplice: un'unica istanza di recognition, controllata da
+    // `wantMic`. onend riavvia SOLO se vogliamo ascoltare e Pico non sta parlando.
+    let recognition = null;
+    let micDisabled = false;       // permesso negato / mic assente: niente riavvii
+    let wantMic = false;           // vogliamo che il riconoscimento sia attivo?
+    let recognitionRunning = false;
+    // Accetta "pico", "picco", "piko", "pigo" con prefisso opzionale (ok/hey/ehi)
+    const WAKE_RE = /\b(?:ok(?:ay|ey)?|hey|ehi|ei|ehy)?\s*pi[ckg]{1,2}o\b/i;
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechAct = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechAct();
+    function micAvailable() {
+      return ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
+    }
+    function startMic() {
+      if (micDisabled || !recognition) return;
+      wantMic = true;
+      // Non avviare il riconoscimento mentre Pico parla: ci penserà onend al
+      // termine del TTS (riavvio coerente, mai sopra la voce sintetizzata).
+      if (!recognitionRunning && !isSpeaking) { try { recognition.start(); } catch (e) {} }
+    }
+    function stopMic() {
+      wantMic = false;
+      if (recognition && recognitionRunning) { try { recognition.stop(); } catch (e) {} }
+    }
+
+    if (micAvailable()) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
       recognition.lang = 'it-IT';
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
-      recognition.onstart = function () {
-        console.log("Listening...");
-      };
-
-      recognition.onresult = function (event) {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const trans = event.results[i][0].transcript.toLowerCase();
-          if (event.results[i].isFinal) {
-            finalTranscript += trans;
-          } else {
-            interimTranscript += trans;
-          }
-        }
-
-        const currentText = (finalTranscript + ' ' + interimTranscript).trim();
-
-        // Wake word detection (solo se conversazione non attiva)
-        if (!isConversationActive) {
-          if (currentText.match(/(ok|ehi|hey)\s*pic(?:o|co)/i)) {
-            speak("Dimmi!", () => {
-              startConversation();
-              try { recognition.start(); } catch(e) {}
-            });
-            try { recognition.stop(); } catch(e) {}
-            return;
-          }
-        }
-
-        // Gestione conversazione attiva
-        if (isConversationActive && finalTranscript) {
-          const cmd = finalTranscript.trim();
-
-          // Ignora frammenti troppo corti / rumore: evita risposte inutili
-          if (cmd.replace(/[^a-zà-ù]/gi, '').length < 3) {
-            return;
-          }
-
-          // Comando stop conversazione
-          if (cmd.match(/^(stop|basta|fine|chiudi|esci|silenzio)$/i)) {
-            speak("Ok, a presto!");
-            endConversation();
-            return;
-          }
-
-          // Stop mic durante elaborazione
-          try { recognition.stop(); } catch(e) {}
-
-          setMicFeedback('Elaboro...');
-          showAiBubble('⏳ ...');
-
-          // Prima controlla comandi locali semplici (timer/sveglie/musica con regex)
-          // poi manda tutto il resto a Claude
-          const handled = processLocalCommand(cmd);
-          if (!handled) {
-            askClaude(cmd);
-          }
-        } else if (isConversationActive && interimTranscript) {
-          // Mostra cosa sta dicendo in tempo reale
-          setMicFeedback('🎤 ' + interimTranscript);
-          resetConversationTimeout();
+      recognition.onstart = () => { recognitionRunning = true; };
+      recognition.onend = () => {
+        recognitionRunning = false;
+        if (wantMic && !isSpeaking && !micDisabled) {
+          try { recognition.start(); } catch (e) {}
         }
       };
-
-      recognition.onerror = function (event) {
-        console.warn("Speech error: " + event.error);
-        // Errori permanenti (permesso negato o microfono assente): non riavviare,
-        // altrimenti onerror -> onend -> start() entra in un loop infinito.
+      recognition.onerror = (event) => {
+        console.warn('Speech error:', event.error);
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
           micDisabled = true;
-          return;
+          wantMic = false;
+          setMicFeedback('Microfono non disponibile');
         }
-        if (event.error === 'no-speech' && isConversationActive) {
-          try { recognition.start(); } catch(e) {}
-        }
+        // no-speech / aborted / network: onend gestirà l'eventuale riavvio
       };
-
-      recognition.onend = function () {
-        if (!isSpeaking && !micDisabled) {
-          try { recognition.start(); } catch (e) { }
-        }
-      };
-
-      setTimeout(() => { try { recognition.start(); } catch (e) { } }, 1000);
+      recognition.onresult = onSpeechResult;
     }
 
-    function activateWakeWord() {
-      isAwake = true;
-      const wave = document.getElementById('voiceWave');
-      const feedback = document.getElementById('micFeedback');
-      if (wave) wave.classList.add('active');
-      if (feedback) {
-        feedback.textContent = "In Ascolto...";
-        feedback.classList.add('show');
+    function onSpeechResult(event) {
+      // Scarta qualsiasi risultato che arrivi mentre Pico parla o quando non
+      // vogliamo ascoltare: recognition.stop() è asincrono e nella sua finestra
+      // di latenza il microfono potrebbe captare la voce di Pico (self-hearing).
+      if (isSpeaking || !wantMic) return;
+
+      let interim = '', finalT = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript.toLowerCase();
+        if (event.results[i].isFinal) finalT += t; else interim += t;
+      }
+
+      // --- Modalità wake word (conversazione non attiva) ---
+      if (!isConversationActive) {
+        const text = (finalT + ' ' + interim).trim();
+        if (WAKE_RE.test(text)) beginConversation();
+        return;
+      }
+
+      // --- Modalità conversazione attiva ---
+      if (finalT) {
+        // Rimuove l'eventuale wake word residua dal comando ("ok pico, metti un timer")
+        let cmd = finalT.replace(new RegExp(WAKE_RE.source, 'ig'), '').trim();
+
+        // Ignora frammenti troppo corti / rumore
+        if (cmd.replace(/[^a-zà-ù]/gi, '').length < 2) { resetConversationTimeout(); return; }
+
+        // Comando per chiudere la conversazione
+        if (/^(stop|basta|fine|chiudi|esci|silenzio|ferma tutto|grazie pico|grazie)$/i.test(cmd)) {
+          stopMic();
+          speakThen('Va bene, a presto!', endConversation);
+          return;
+        }
+
+        // Abbiamo un comando: spegni il mic ed elabora.
+        // Fermiamo il timer di inattività: non deve scattare mentre attendiamo
+        // la risposta (una fetch lenta a Claude chiuderebbe la conversazione a
+        // metà, lasciando il microfono spento). Verrà riarmato a risposta pronta.
+        stopMic();
+        if (conversationTimeout) { clearTimeout(conversationTimeout); conversationTimeout = null; }
+        setMicFeedback('Sto elaborando...');
+        showAiBubble('...');
+
+        const handled = processLocalCommand(cmd);
+        if (!handled) askClaude(cmd);
+      } else if (interim) {
+        setMicFeedback('🎤 ' + interim);
+        resetConversationTimeout();
       }
     }
 
-    function deactivateWakeWord() {
-      isAwake = false;
-      const wave = document.getElementById('voiceWave');
-      const feedback = document.getElementById('micFeedback');
-      if (wave) wave.classList.remove('active');
-      if (feedback) feedback.classList.remove('show');
-      if (awakeTimeout) clearTimeout(awakeTimeout);
-      try { recognition.stop(); } catch (e) { }
-    }
-
-    function resetAwakeTimeout() {
-      if (awakeTimeout) clearTimeout(awakeTimeout);
-      awakeTimeout = setTimeout(() => {
-        if (isAwake && !isConversationActive) deactivateWakeWord();
-      }, 5000);
-    }
-
-    // Comandi locali veloci (senza passare da Claude)
+    // Comandi locali veloci (senza passare da Claude): risposta istantanea
     function processLocalCommand(cmd) {
-      // Timer: numero + minuti/secondi accompagnato da un intento di timer
-      const timerMatchMin = cmd.match(/(\d+)\s*minut[io]/);
-      const timerMatchSec = cmd.match(/(\d+)\s*second[io]/);
-      const wantsTimer = cmd.includes('timer') || cmd.includes('conto alla rovescia') ||
+      const timerMatchMin = cmd.match(/(\d+)\s*minut/);
+      const timerMatchSec = cmd.match(/(\d+)\s*second/);
+      const wantsTimer = cmd.includes('timer') || cmd.includes('rovescia') ||
                          /\b(imposta|avvia|metti|fai partire|parti|setta|crea|fai)\b/.test(cmd);
       if ((timerMatchMin || timerMatchSec) && wantsTimer) {
-        let mins = timerMatchMin ? parseInt(timerMatchMin[1]) : 0;
-        let secs = timerMatchSec ? parseInt(timerMatchSec[1]) : 0;
-        let totalSecs = (mins * 60) + secs;
+        const mins = timerMatchMin ? parseInt(timerMatchMin[1]) : 0;
+        const secs = timerMatchSec ? parseInt(timerMatchSec[1]) : 0;
+        const totalSecs = (mins * 60) + secs;
         if (totalSecs > 0) {
           startTimer(totalSecs);
-          const label = mins > 0 ? `${mins} minut${mins === 1 ? 'o' : 'i'}` : `${secs} second${secs === 1 ? 'o' : 'i'}`;
+          let label = mins > 0 ? `${mins} minut${mins === 1 ? 'o' : 'i'}` : '';
+          if (mins > 0 && secs > 0) label += ` e ${secs} second${secs === 1 ? 'o' : 'i'}`;
+          else if (mins === 0) label = `${secs} second${secs === 1 ? 'o' : 'i'}`;
           hideAiBubble();
-          // Azione eseguita → chiudi la conversazione: niente riascolto e niente
-          // domande di follow-up indesiderate ("cosa vuoi impostare?").
-          speak(`Timer da ${label} avviato.`, () => {
-            if (isConversationActive) endConversation();
-          });
+          // Azione eseguita → chiudi la conversazione (one-shot), niente follow-up
+          speakThen(`Timer da ${label} avviato.`, endConversation);
           return true;
         }
       }
 
-      // Stop esplicito musica/timer senza LLM
-      if ((cmd.includes('stop') || cmd.includes('ferma') || cmd.includes('basta')) && !isConversationActive) {
-        if (ringingInterval) { stopRingtone(); return true; }
-        if (isPlaying) { toggleMusic(); speak("Musica fermata."); return true; }
+      // Stop esplicito della musica
+      if (/\b(ferma|spegni|stop|basta)\b/.test(cmd) && cmd.includes('music')) {
+        if (isPlaying) toggleMusic();
+        hideAiBubble();
+        speakThen('Musica fermata.', endConversation);
+        return true;
       }
 
       return false; // Non gestito localmente → va a Claude
-    }
-
-    function processVoiceCommand(cmd) {
-      processLocalCommand(cmd);
     }
   </script>
 
