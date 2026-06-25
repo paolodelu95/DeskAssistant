@@ -24,9 +24,11 @@
     }
   </script>
   <style>
-    /* App fullscreen: la pagina non deve mai scrollare (la voice-wave nascosta
-       sotto il bordo creava overflow verticale). I modali scrollano internamente. */
+    /* App fullscreen kiosk: la pagina non deve MAI scrollare. Su mobile il solo
+       overflow:hidden non basta (rubber-band / barra indirizzi): blocco il body
+       con position:fixed ancorato al viewport. I modali scrollano internamente. */
     html {
+      height: 100%;
       overflow: hidden;
     }
 
@@ -37,6 +39,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      position: fixed;
+      inset: 0;
       min-height: 100vh;
       margin: 0;
       padding: 0;
@@ -1044,6 +1048,62 @@
       opacity: 1;
     }
 
+    .mini-select {
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background: #f1f4f7;
+      color: #333;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    /* Rotazione forzata: simula il landscape su un dispositivo bloccato in verticale.
+       rotate(-90deg) + top:100% riempie esattamente il viewport (W<->H scambiate). */
+    body.force-rotate {
+      position: fixed;
+      top: 100%;
+      left: 0;
+      right: auto;
+      bottom: auto;
+      width: 100vh;
+      height: 100vw;
+      transform-origin: left top;
+      transform: rotate(-90deg);
+      overflow: hidden;
+    }
+
+    /* Layout orizzontale quando si forza il landscape (a prescindere dalla media query) */
+    body.force-rotate .fullscreen-weather {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    body.force-rotate .smart-display-top {
+      margin-top: 0;
+    }
+
+    body.force-rotate .smart-display-bottom {
+      align-items: flex-end;
+      text-align: right;
+      margin-bottom: 0;
+      max-width: 48%;
+    }
+
+    body.force-rotate .time-part {
+      font-size: 3.4rem;
+    }
+
+    body.force-rotate .city-part {
+      font-size: 1.8rem;
+    }
+
+    body.force-rotate .temp-part,
+    body.force-rotate .desc-part,
+    body.force-rotate .date-part {
+      font-size: 1.3rem;
+    }
+
     /* Viewport bassi (telefoni in landscape): compatta il layout in verticale */
     @media (max-height: 500px) {
       .time-part {
@@ -1203,6 +1263,15 @@
           <input type="checkbox" id="compactModeToggle" onchange="toggleCompactMode(this)">
           <span class="slider"></span>
         </label>
+      </div>
+
+      <div class="setting-item">
+        <span>Orientamento</span>
+        <select id="orientSelect" class="mini-select" onchange="setOrientationMode(this.value)">
+          <option value="auto">Auto</option>
+          <option value="portrait">Verticale</option>
+          <option value="landscape">Orizzontale</option>
+        </select>
       </div>
 
       <button class="btn-outline" onclick="useMyLocation()" style="width:100%; margin-top:10px;">📍 Usa la mia posizione</button>
@@ -2123,12 +2192,34 @@
     setInterval(updateClock, 1000);
     initMusic();
 
-    // --- ORIENTAMENTO: adatta la vista a come è tenuto il telefono ---
+    // --- ORIENTAMENTO ---
+    // Modalità: 'auto' segue il dispositivo; 'portrait'/'landscape' forzano la vista.
+    // Se forziamo un orientamento diverso da quello fisico del dispositivo
+    // (es. telefono con rotazione automatica disattivata), ruotiamo via CSS.
+    let orientationMode = localStorage.getItem('orientationMode') || 'auto';
+
     function applyOrientation() {
-      const landscape = window.matchMedia('(orientation: landscape)').matches;
+      const deviceLandscape = window.matchMedia('(orientation: landscape)').matches;
+      let landscape;
+      if (orientationMode === 'portrait') landscape = false;
+      else if (orientationMode === 'landscape') landscape = true;
+      else landscape = deviceLandscape;
+
       document.body.classList.toggle('landscape', landscape);
       document.body.classList.toggle('portrait', !landscape);
+
+      // Rotazione fisica solo quando l'orientamento voluto ≠ quello del dispositivo
+      const needRotate = (orientationMode === 'landscape' && !deviceLandscape) ||
+                         (orientationMode === 'portrait' && deviceLandscape);
+      document.body.classList.toggle('force-rotate', needRotate);
     }
+
+    function setOrientationMode(mode) {
+      orientationMode = mode;
+      localStorage.setItem('orientationMode', mode);
+      applyOrientation();
+    }
+
     try {
       const mqOrient = window.matchMedia('(orientation: landscape)');
       if (mqOrient.addEventListener) mqOrient.addEventListener('change', applyOrientation);
@@ -2136,11 +2227,32 @@
     } catch (e) {}
     window.addEventListener('orientationchange', applyOrientation);
     window.addEventListener('resize', applyOrientation);
+
+    const orientSelectEl = document.getElementById('orientSelect');
+    if (orientSelectEl) orientSelectEl.value = orientationMode;
     applyOrientation();
+
+    // --- WAKE LOCK: impedisce allo schermo di spegnersi mentre l'app è attiva ---
+    let wakeLock = null;
+    async function requestWakeLock() {
+      if (!('wakeLock' in navigator)) return;
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+      } catch (e) {
+        console.warn('Wake Lock non disponibile:', e);
+      }
+    }
+    // Il lock si rilascia quando l'app va in background: riacquisiscilo al ritorno
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    });
 
     function startupPlay() {
       const overlay = document.getElementById('interactionOverlay');
       if (overlay) overlay.style.display = 'none';
+
+      // Tieni acceso lo schermo (richiede un gesto utente: il tap di avvio)
+      requestWakeLock();
 
       // Sblocca HTML5 Audio
       const audio = document.getElementById('bgMusic');
@@ -2202,7 +2314,12 @@ Quando l'utente vuole impostare un timer, una sveglia, o controllare la musica, 
 
 Includi sempre anche una risposta testuale naturale oltre all'azione. Esempio: "Certo! <action>{"type":"timer","seconds":480}</action> Ho impostato un timer da 8 minuti per le uova."
 
-Se non c'è nessuna azione da eseguire, rispondi solo con testo normale.`;
+Se non c'è nessuna azione da eseguire, rispondi solo con testo normale.
+
+REGOLE IMPORTANTI:
+- Sii estremamente conciso (1-2 frasi).
+- Non dire MAI che il messaggio non è chiaro, è incompleto, o di ripetere: se non capisci, rispondi comunque in modo breve senza lamentarti.
+- Quando esegui un'azione (timer/sveglia/musica), conferma con UNA sola frase breve.`;
 
     async function askClaude(userMessage) {
       const apiKey = localStorage.getItem('claudeApiKey');
@@ -2304,6 +2421,23 @@ Se non c'è nessuna azione da eseguire, rispondi solo con testo normale.`;
       document.getElementById('aiBubble').style.display = 'none';
     }
 
+    // Sceglie la migliore voce italiana disponibile, preferendo quelle naturali/Google
+    let cachedItVoice = null;
+    function pickItalianVoice() {
+      const voices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+      const it = voices.filter(v => /^it/i.test(v.lang));
+      if (!it.length) return null;
+      return it.find(v => /google/i.test(v.name))
+          || it.find(v => /(natural|neural|premium|enhanced|wavenet|siri)/i.test(v.name))
+          || it.find(v => /(federica|elsa|alice|luca|giorgio|isabela)/i.test(v.name))
+          || it[0];
+    }
+    if (window.speechSynthesis) {
+      cachedItVoice = pickItalianVoice();
+      // Le voci spesso si caricano in modo asincrono: aggiorna quando disponibili
+      window.speechSynthesis.onvoiceschanged = () => { cachedItVoice = pickItalianVoice(); };
+    }
+
     function speak(text, onEndCallback) {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
@@ -2311,19 +2445,17 @@ Se non c'è nessuna azione da eseguire, rispondi solo con testo normale.`;
 
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = 'it-IT';
-      utter.rate = 1.05;
-      utter.pitch = 1;
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
 
-      // Scegli voce italiana se disponibile
-      const voices = window.speechSynthesis.getVoices();
-      const itVoice = voices.find(v => v.lang.startsWith('it'));
-      if (itVoice) utter.voice = itVoice;
+      if (!cachedItVoice) cachedItVoice = pickItalianVoice();
+      if (cachedItVoice) utter.voice = cachedItVoice;
 
       utter.onend = () => {
         isSpeaking = false;
         if (onEndCallback) onEndCallback();
       };
-      utter.onerror = () => { isSpeaking = false; };
+      utter.onerror = () => { isSpeaking = false; if (onEndCallback) onEndCallback(); };
 
       window.speechSynthesis.speak(utter);
     }
@@ -2409,6 +2541,11 @@ Se non c'è nessuna azione da eseguire, rispondi solo con testo normale.`;
         if (isConversationActive && finalTranscript) {
           const cmd = finalTranscript.trim();
 
+          // Ignora frammenti troppo corti / rumore: evita risposte inutili
+          if (cmd.replace(/[^a-zà-ù]/gi, '').length < 3) {
+            return;
+          }
+
           // Comando stop conversazione
           if (cmd.match(/^(stop|basta|fine|chiudi|esci|silenzio)$/i)) {
             speak("Ok, a presto!");
@@ -2487,22 +2624,27 @@ Se non c'è nessuna azione da eseguire, rispondi solo con testo normale.`;
 
     // Comandi locali veloci (senza passare da Claude)
     function processLocalCommand(cmd) {
-      // Timer con parola chiave esplicita
+      // Timer: numero + minuti/secondi accompagnato da un intento di timer
       const timerMatchMin = cmd.match(/(\d+)\s*minut[io]/);
       const timerMatchSec = cmd.match(/(\d+)\s*second[io]/);
-      if ((timerMatchMin || timerMatchSec) && (cmd.includes('timer') || cmd.includes('conto alla rovescia'))) {
+      const wantsTimer = cmd.includes('timer') || cmd.includes('conto alla rovescia') ||
+                         /\b(imposta|avvia|metti|fai partire|parti|setta|crea|fai)\b/.test(cmd);
+      if ((timerMatchMin || timerMatchSec) && wantsTimer) {
         let mins = timerMatchMin ? parseInt(timerMatchMin[1]) : 0;
         let secs = timerMatchSec ? parseInt(timerMatchSec[1]) : 0;
         let totalSecs = (mins * 60) + secs;
         if (totalSecs > 0) {
           startTimer(totalSecs);
-          const label = mins > 0 ? `${mins} minut${mins===1?'o':'i'}` : `${secs} secondi`;
-          speak(`Timer da ${label} avviato!`);
+          const label = mins > 0 ? `${mins} minut${mins === 1 ? 'o' : 'i'}` : `${secs} second${secs === 1 ? 'o' : 'i'}`;
           hideAiBubble();
-          if (isConversationActive) {
-            resetConversationTimeout();
-            setTimeout(() => { try { recognition.start(); } catch(e) {} }, 1500);
-          }
+          // Riavvia il microfono SOLO dopo che la voce ha finito di parlare, così non
+          // ricattura l'audio della sintesi (era la causa delle risposte inutili).
+          speak(`Timer da ${label} avviato.`, () => {
+            if (isConversationActive) {
+              resetConversationTimeout();
+              try { recognition.start(); } catch (e) {}
+            }
+          });
           return true;
         }
       }
