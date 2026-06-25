@@ -2417,10 +2417,12 @@ REGOLE IMPORTANTI:
 
         // Estrai ed esegui eventuali azioni
         const actionMatch = fullText.match(/<action>(.*?)<\/action>/s);
+        let didAction = false;
         if (actionMatch) {
           try {
             const action = JSON.parse(actionMatch[1]);
             executeClaudeAction(action);
+            didAction = true;
           } catch (e) { console.warn('Azione non parsabile', e); }
         }
 
@@ -2428,11 +2430,15 @@ REGOLE IMPORTANTI:
         const cleanText = fullText.replace(/<action>.*?<\/action>/gs, '').trim();
         showAiBubble(cleanText);
         speak(cleanText, () => {
-          // Dopo che finisce di parlare, se la conversazione è attiva riattiva il mic
-          if (isConversationActive) {
+          if (!isConversationActive) return;
+          if (didAction) {
+            // Azione eseguita → chiudi la conversazione, niente domande di follow-up
+            endConversation();
+          } else {
+            // Solo Q&A: resta in ascolto per un'eventuale domanda successiva
             resetConversationTimeout();
             setMicFeedback('Dimmi pure...');
-            try { recognition.start(); } catch(e) {}
+            try { recognition.start(); } catch (e) {}
           }
         });
 
@@ -2724,13 +2730,10 @@ REGOLE IMPORTANTI:
           startTimer(totalSecs);
           const label = mins > 0 ? `${mins} minut${mins === 1 ? 'o' : 'i'}` : `${secs} second${secs === 1 ? 'o' : 'i'}`;
           hideAiBubble();
-          // Riavvia il microfono SOLO dopo che la voce ha finito di parlare, così non
-          // ricattura l'audio della sintesi (era la causa delle risposte inutili).
+          // Azione eseguita → chiudi la conversazione: niente riascolto e niente
+          // domande di follow-up indesiderate ("cosa vuoi impostare?").
           speak(`Timer da ${label} avviato.`, () => {
-            if (isConversationActive) {
-              resetConversationTimeout();
-              try { recognition.start(); } catch (e) {}
-            }
+            if (isConversationActive) endConversation();
           });
           return true;
         }
