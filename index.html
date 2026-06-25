@@ -1063,6 +1063,54 @@
       opacity: 1;
     }
 
+    /* Popup risposta di Pico: centrato in basso, sopra l'onda vocale, responsive
+       in ogni orientamento. Nascosto di default, appare con una transizione. */
+    .ai-bubble {
+      position: fixed;
+      left: 50%;
+      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      transform: translate(-50%, 12px);
+      width: min(560px, 92vw);
+      box-sizing: border-box;
+      background: rgba(15, 18, 22, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: #fff;
+      padding: 16px 22px;
+      border-radius: 18px;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      z-index: 130;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      max-height: 42vh;
+      overflow-y: auto;
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+    }
+
+    .ai-bubble.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    /* In landscape "basso" (telefoni girati) avvicino il popup al bordo e riduco
+       l'altezza così non copre l'orologio. */
+    @media (max-height: 500px) {
+      .ai-bubble {
+        bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+        max-height: 56vh;
+        font-size: 1rem;
+        padding: 12px 18px;
+        width: min(680px, 94vw);
+      }
+    }
+
     .mini-select {
       padding: 6px 10px;
       border-radius: 10px;
@@ -1308,18 +1356,30 @@
         </select>
       </div>
 
-      <div class="setting-item">
-        <span>Voce</span>
-        <select id="voiceSelect" class="mini-select" onchange="setVoice(this.value)" style="max-width:55%;"></select>
+      <div style="margin-top:18px; border-top:1px solid #eee; padding-top:12px; text-align:left;">
+        <label style="display:block; font-weight:bold; margin-bottom:10px; font-size:0.95rem;">🔊 Voce di Pico</label>
+
+        <select id="voiceSelect" class="mini-select" onchange="setVoice(this.value)"
+          style="width:100%; box-sizing:border-box; margin:0 0 10px 0;"></select>
+
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <span style="font-size:0.85rem; color:#666; white-space:nowrap;">Velocità</span>
+          <input type="range" id="rateRange" min="0.7" max="1.2" step="0.05" onchange="setRate(this.value)"
+            class="range-slider" style="flex:1;">
+        </div>
+        <button class="btn-outline" onclick="testVoice()" style="width:100%; margin:6px 0 0 0; font-size:0.9rem;">▶ Prova la voce</button>
+
+        <div class="setting-item" style="margin:14px 0 4px 0; font-size:1rem;">
+          <span>Ascolto continuo "Ok Pico"</span>
+          <label class="switch" title="Attiva/disattiva l'ascolto sempre attivo">
+            <input type="checkbox" id="continuousToggle" onchange="setContinuousListening(this.checked)" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p style="font-size:0.78rem; color:#999; margin:2px 0 0 0;">Se senti falsi avvii o rumori che attivano Pico, disattivalo e usa il tasto microfono.</p>
       </div>
 
-      <div class="setting-item">
-        <span>Velocità voce</span>
-        <input type="range" id="rateRange" min="0.7" max="1.2" step="0.05" onchange="setRate(this.value)"
-          class="range-slider" style="flex:1; max-width:45%; margin-left:12px;">
-      </div>
-
-      <button class="btn-outline" onclick="useMyLocation()" style="width:100%; margin-top:10px;">📍 Usa la mia posizione</button>
+      <button class="btn-outline" onclick="useMyLocation()" style="width:100%; margin-top:14px;">📍 Usa la mia posizione</button>
       <button class="btn-outline" onclick="changeCity()" style="width:100%; margin-top:10px;">Cambia città</button>
 
       <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
@@ -1472,28 +1532,7 @@
   </div>
 
   <!-- AI Response Bubble -->
-  <div id="aiBubble" style="
-    display:none;
-    position:fixed;
-    bottom: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 85%;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: white;
-    padding: 16px 22px;
-    border-radius: 20px;
-    font-size: 1.1rem;
-    line-height: 1.5;
-    z-index: 110;
-    border: 1px solid rgba(255,255,255,0.15);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    text-align: center;
-    max-height: 40vh;
-    overflow-y: auto;
-  "></div>
+  <div id="aiBubble" class="ai-bubble"></div>
 
   <script>
     let debounceTimer;
@@ -2071,12 +2110,17 @@
         btn.innerHTML = '&#9658;'; // Play symbol
         homeIcon.classList.remove('music-playing');
         updateMusicCapsule();
+        // Radio spenta → si può riascoltare la wake word (se abilitata)
+        if (typeof idleListen === 'function' && !isConversationActive) idleListen();
       } else {
         audio.play().then(() => {
           isPlaying = true;
           btn.innerHTML = '&#10074;&#10074;'; // Pause symbol
           homeIcon.classList.add('music-playing');
           updateMusicCapsule();
+          // Radio accesa → spegni il mic wake-word: non deve sentire la musica
+          // e farsi falsi avvii. Per parlare con Pico usa il tasto microfono.
+          if (typeof stopMic === 'function' && !isConversationActive) stopMic();
         }).catch(e => console.log('Audio error:', e));
       }
     }
@@ -2362,9 +2406,9 @@
         warm.volume = 0; window.speechSynthesis.speak(warm);
       } catch (e) {}
 
-      // Avvia l'ascolto sempre-attivo della wake word dopo il gesto utente:
-      // così il prompt dei permessi del microfono è legato al tap.
-      startMic();
+      // Avvia l'ascolto della wake word dopo il gesto utente (se abilitato e niente
+      // musica): così il prompt dei permessi del microfono è legato al tap.
+      idleListen();
 
       // Rilevamento automatico posizione al primo avvio (nessuna città salvata).
       // Lanciato dopo il tap così il prompt dei permessi è legato a un gesto utente.
@@ -2482,7 +2526,7 @@ REGOLE IMPORTANTI:
         speakThen(cleanText, () => {
           // Se la conversazione è già stata chiusa nel frattempo, torna comunque
           // ad ascoltare la wake word: il microfono non deve mai restare morto.
-          if (!isConversationActive) { if (!micDisabled) startMic(); return; }
+          if (!isConversationActive) { idleListen(); return; }
           if (didAction) {
             // Azione eseguita → chiudi la conversazione, niente domande di follow-up
             endConversation();
@@ -2519,14 +2563,27 @@ REGOLE IMPORTANTI:
       }
     }
 
-    function showAiBubble(text) {
+    let _bubbleHideTimer = null;
+    // autoHideMs: se passato (> 0), il popup si nasconde da solo dopo quei ms.
+    function showAiBubble(text, autoHideMs) {
       const bubble = document.getElementById('aiBubble');
       bubble.textContent = text;
-      bubble.style.display = 'block';
+      bubble.classList.add('show');
+      if (_bubbleHideTimer) { clearTimeout(_bubbleHideTimer); _bubbleHideTimer = null; }
+      if (autoHideMs && autoHideMs > 0) {
+        _bubbleHideTimer = setTimeout(() => { hideAiBubble(); }, autoHideMs);
+      }
     }
 
     function hideAiBubble() {
-      document.getElementById('aiBubble').style.display = 'none';
+      if (_bubbleHideTimer) { clearTimeout(_bubbleHideTimer); _bubbleHideTimer = null; }
+      document.getElementById('aiBubble').classList.remove('show');
+    }
+
+    // Lascia leggere la risposta ancora un po', poi la nasconde da sola.
+    function autoHideBubbleAfter(ms) {
+      if (_bubbleHideTimer) clearTimeout(_bubbleHideTimer);
+      _bubbleHideTimer = setTimeout(hideAiBubble, ms);
     }
 
     // ===== SINTESI VOCALE (TTS) =====
@@ -2563,18 +2620,22 @@ REGOLE IMPORTANTI:
     function populateVoiceSelect() {
       const sel = document.getElementById('voiceSelect');
       if (!sel) return;
-      const it = italianVoices();
       sel.innerHTML = '';
-      if (!it.length) {
+      if (!availableVoices.length) {
         const o = document.createElement('option');
         o.value = ''; o.textContent = 'Voce predefinita del sistema';
         sel.appendChild(o); return;
       }
+      const it = italianVoices();
       const best = bestItalianVoice();
-      it.forEach(v => {
+      // Mostra le voci italiane; se non ce ne sono, mostra TUTTE le voci del
+      // dispositivo (con la sigla lingua) così c'è sempre qualcosa da scegliere.
+      const list = it.length ? it : availableVoices.slice();
+      list.forEach(v => {
         const o = document.createElement('option');
         o.value = v.voiceURI;
-        o.textContent = v.name.replace(/^(Microsoft|Google)\s*/i, '') + (v === best ? ' (consigliata)' : '');
+        const langTag = it.length ? '' : ' [' + (v.lang || '') + ']';
+        o.textContent = v.name.replace(/^(Microsoft|Google)\s*/i, '') + langTag + (v === best ? ' (consigliata)' : '');
         if ((ttsVoiceURI && v.voiceURI === ttsVoiceURI) || (!ttsVoiceURI && v === best)) o.selected = true;
         sel.appendChild(o);
       });
@@ -2582,11 +2643,14 @@ REGOLE IMPORTANTI:
     function setVoice(uri) {
       ttsVoiceURI = uri;
       localStorage.setItem('ttsVoiceURI', uri);
-      speak('Ciao, sono Pico, il tuo assistente da cucina.');
+      testVoice(); // breve campione così senti subito la voce scelta
     }
     function setRate(r) {
       ttsRate = parseFloat(r) || 1.0;
       localStorage.setItem('ttsRate', ttsRate);
+    }
+    function testVoice() {
+      speak('Ciao, sono Pico, il tuo assistente da cucina. Come posso aiutarti?');
     }
     if (window.speechSynthesis) {
       loadVoices();
@@ -2596,6 +2660,8 @@ REGOLE IMPORTANTI:
     document.addEventListener('DOMContentLoaded', () => {
       const rr = document.getElementById('rateRange');
       if (rr) rr.value = ttsRate;
+      const ct = document.getElementById('continuousToggle');
+      if (ct) ct.checked = continuousListening;
       populateVoiceSelect();
     });
 
@@ -2681,11 +2747,12 @@ REGOLE IMPORTANTI:
       if (micDisabled) { speak('Microfono non disponibile. Controlla i permessi del browser.'); return; }
       isConversationActive = true;
       conversationHistory = [];
+      duckMusic(); // abbassa la radio così il mic sente te e non la musica
       showVoiceWave(true);
       setTalkActive(true);
       setMicFeedback('Dimmi pure...');
-      // Saluta col mic spento, poi torna in ascolto per il comando vero
-      speakThen('Dimmi pure', () => { resetConversationTimeout(); startMic(); });
+      // Saluta col mic spento, poi torna in ascolto (con pausa anti-eco) per il comando
+      speakThen('Dimmi pure', () => { resetConversationTimeout(); startMicCooled(); });
     }
 
     function endConversation() {
@@ -2695,20 +2762,24 @@ REGOLE IMPORTANTI:
       // Interrompe un eventuale TTS in corso così il mic non si riaccende sopra la voce
       if (window.speechSynthesis) window.speechSynthesis.cancel();
       isSpeaking = false;
-      hideAiBubble();
+      // Lascia leggibile l'ultima risposta/conferma per qualche secondo, poi sparisce
+      autoHideBubbleAfter(4000);
       showVoiceWave(false);
       setTalkActive(false);
       setMicFeedback('');
-      // Torna ad ascoltare la wake word "Ok Pico" (se il mic è disponibile)
-      if (!micDisabled) startMic();
+      unduckMusic(); // ripristina il volume della radio
+      // Torna ad ascoltare la wake word "Ok Pico" (solo se abilitato e niente musica)
+      idleListen();
     }
 
     function resumeListening(feedback) {
+      // La risposta mostrata resta leggibile qualche secondo, poi si nasconde da sola.
+      autoHideBubbleAfter(6000);
       if (micDisabled) { setMicFeedback('Microfono non disponibile'); return; }
-      if (!isConversationActive) { startMic(); return; } // wake word, niente conversazione
+      if (!isConversationActive) { startMicCooled(); return; } // wake word, niente conversazione
       if (feedback) setMicFeedback(feedback);
       resetConversationTimeout();
-      startMic();
+      startMicCooled();
     }
 
     // Push-to-talk: avvia la conversazione col tap, senza dover dire "Ok Pico"
@@ -2736,8 +2807,12 @@ REGOLE IMPORTANTI:
     let micDisabled = false;       // permesso negato / mic assente: niente riavvii
     let wantMic = false;           // vogliamo che il riconoscimento sia attivo?
     let recognitionRunning = false;
-    // Accetta "pico", "picco", "piko", "pigo" con prefisso opzionale (ok/hey/ehi)
-    const WAKE_RE = /\b(?:ok(?:ay|ey)?|hey|ehi|ei|ehy)?\s*pi[ckg]{1,2}o\b/i;
+    let _micCooldown = null;        // breve pausa anti-eco prima di riascoltare
+    // Ascolto continuo della wake word: disattivabile dalle impostazioni
+    let continuousListening = localStorage.getItem('continuousListening') !== 'false';
+    // Wake word SEVERA: richiede un prefisso esplicito ("ok/hey/ehi pico"), così
+    // rumori e musica non avviano Pico per sbaglio. Accetta pico/picco/piko/pigo.
+    const WAKE_RE = /\b(?:ok(?:ay|ey)?|hey|hei|ehi|ei|ehy|eh)\s+pi[ckg]{1,2}o\b/i;
 
     function micAvailable() {
       return ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
@@ -2749,9 +2824,39 @@ REGOLE IMPORTANTI:
       // termine del TTS (riavvio coerente, mai sopra la voce sintetizzata).
       if (!recognitionRunning && !isSpeaking) { try { recognition.start(); } catch (e) {} }
     }
+    // Riaccende il mic dopo una breve pausa: evita di captare la coda della voce
+    // di Pico appena finito di parlare (eco sui dispositivi con casse vicine).
+    function startMicCooled() {
+      if (_micCooldown) clearTimeout(_micCooldown);
+      _micCooldown = setTimeout(() => { _micCooldown = null; startMic(); }, 650);
+    }
     function stopMic() {
       wantMic = false;
+      if (_micCooldown) { clearTimeout(_micCooldown); _micCooldown = null; }
       if (recognition && recognitionRunning) { try { recognition.stop(); } catch (e) {} }
+    }
+    // Ascolto wake-word a riposo: solo se abilitato e la musica NON sta suonando
+    // (col mic acceso durante la radio, sentirebbe la musica e farebbe falsi avvii).
+    function idleListen() {
+      if (micDisabled || isConversationActive) return;
+      if (!continuousListening || isPlaying) { stopMic(); return; }
+      startMicCooled();
+    }
+    function setContinuousListening(on) {
+      continuousListening = !!on;
+      localStorage.setItem('continuousListening', continuousListening ? 'true' : 'false');
+      if (isConversationActive) return;
+      if (continuousListening) idleListen(); else stopMic();
+    }
+    // Abbassa/ripristina il volume della radio mentre si parla con Pico
+    let preConvoVolume = null;
+    function duckMusic() {
+      const a = document.getElementById('bgMusic');
+      if (isPlaying && a && preConvoVolume === null) { preConvoVolume = a.volume; a.volume = Math.min(a.volume, 0.08); }
+    }
+    function unduckMusic() {
+      const a = document.getElementById('bgMusic');
+      if (a && preConvoVolume !== null) { a.volume = preConvoVolume; preConvoVolume = null; }
     }
 
     if (micAvailable()) {
