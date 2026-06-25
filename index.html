@@ -339,6 +339,10 @@
     }
 
     /* Modal Styles */
+    /* L'OVERLAY scrolla (align-items:flex-start + overflow:auto): così su schermi
+       bassi (telefono in landscape) il modale non viene tagliato in alto e la X di
+       chiusura resta sempre raggiungibile. Quando il contenuto ci sta, margin:auto
+       lo ricentra verticalmente. */
     .modal {
       display: none;
       position: fixed;
@@ -348,8 +352,12 @@
       bottom: 0;
       background: rgba(0, 0, 0, 0.6);
       z-index: 200;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
+      overflow-y: auto;
+      padding: 16px;
+      box-sizing: border-box;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-content {
@@ -358,8 +366,7 @@
       border-radius: 12px;
       width: 300px;
       max-width: 90vw;
-      max-height: 90vh;
-      overflow-y: auto;
+      margin: auto;
       box-sizing: border-box;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       color: #333;
@@ -367,13 +374,20 @@
       position: relative;
     }
 
+    /* X di chiusura: sempre visibile in alto a destra anche scrollando */
     .close-modal {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 1.5rem;
+      position: sticky;
+      float: right;
+      top: -10px;
+      margin: -10px -8px 0 0;
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
+      text-align: center;
+      font-size: 1.6rem;
       cursor: pointer;
       color: #888;
+      z-index: 2;
     }
 
     .close-modal:hover {
@@ -1246,6 +1260,10 @@
 
       .modal-body {
         max-height: 80vh;
+      }
+
+      .modal-content {
+        padding: 18px;
       }
     }
   </style>
@@ -2449,6 +2467,7 @@
     const CLAUDE_SYSTEM_PROMPT = `Sei un assistente da cucina intelligente e amichevole chiamato Pico.
 Rispondi sempre in italiano, con un tono caldo, naturale e colloquiale, come un amico esperto in cucina. Sii conciso (max 3-4 frasi, a meno che non serva di più per una ricetta).
 Puoi aiutare con: consigli su conservazione degli alimenti, ricette rapide, utilizzo di ingredienti avanzati, conversione unità di misura, suggerimenti culinari.
+Rispondi anche a domande veloci di tutti i giorni (piccoli calcoli, conversioni, orari, curiosità) in modo diretto: ad esempio "quanto fa 10 per 2" -> "Fa venti.". Non deviare e non dire che sei solo un assistente da cucina.
 
 Quando l'utente vuole impostare un timer, una sveglia, o controllare la musica, rispondi con un JSON speciale nel formato:
 <action>{"type":"timer","seconds":300}</action> per i timer
@@ -2747,6 +2766,7 @@ REGOLE IMPORTANTI:
       if (micDisabled) { speak('Microfono non disponibile. Controlla i permessi del browser.'); return; }
       isConversationActive = true;
       conversationHistory = [];
+      resetCmdBuffer();
       duckMusic(); // abbassa la radio così il mic sente te e non la musica
       showVoiceWave(true);
       setTalkActive(true);
@@ -2758,6 +2778,7 @@ REGOLE IMPORTANTI:
     function endConversation() {
       isConversationActive = false;
       conversationHistory = [];
+      resetCmdBuffer();
       if (conversationTimeout) { clearTimeout(conversationTimeout); conversationTimeout = null; }
       // Interrompe un eventuale TTS in corso così il mic non si riaccende sopra la voce
       if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -2808,6 +2829,8 @@ REGOLE IMPORTANTI:
     let wantMic = false;           // vogliamo che il riconoscimento sia attivo?
     let recognitionRunning = false;
     let _micCooldown = null;        // breve pausa anti-eco prima di riascoltare
+    let pendingCmd = '';            // frase in costruzione (segmenti accumulati)
+    let cmdDispatchTimer = null;    // invia il comando solo dopo una pausa
     // Ascolto continuo della wake word: disattivabile dalle impostazioni
     let continuousListening = localStorage.getItem('continuousListening') !== 'false';
     // Wake word SEVERA: richiede un prefisso esplicito ("ok/hey/ehi pico"), così
@@ -2906,35 +2929,59 @@ REGOLE IMPORTANTI:
       }
 
       // --- Modalità conversazione attiva ---
-      if (finalT) {
-        // Rimuove l'eventuale wake word residua dal comando ("ok pico, metti un timer")
-        let cmd = finalT.replace(new RegExp(WAKE_RE.source, 'ig'), '').trim();
+      // Il riconoscimento consegna la frase a SEGMENTI: accumuliamo i pezzi e
+      // inviamo solo dopo una breve pausa, così non mandiamo a Claude una domanda
+      // monca (es. "quanto fa" senza "dieci per due" → risposte a caso).
+      if (finalT) pendingCmd = (pendingCmd + ' ' + finalT).replace(/\s+/g, ' ').trim();
 
-        // Ignora frammenti troppo corti / rumore
-        if (cmd.replace(/[^a-zà-ù]/gi, '').length < 2) { resetConversationTimeout(); return; }
+      const shown = (pendingCmd + ' ' + interim).replace(/\s+/g, ' ').trim();
+      if (shown) setMicFeedback('🎤 ' + shown);
+      resetConversationTimeout();
 
-        // Comando per chiudere la conversazione
-        if (/^(stop|basta|fine|chiudi|esci|silenzio|ferma tutto|grazie pico|grazie)$/i.test(cmd)) {
-          stopMic();
-          speakThen('Va bene, a presto!', endConversation);
-          return;
-        }
-
-        // Abbiamo un comando: spegni il mic ed elabora.
-        // Fermiamo il timer di inattività: non deve scattare mentre attendiamo
-        // la risposta (una fetch lenta a Claude chiuderebbe la conversazione a
-        // metà, lasciando il microfono spento). Verrà riarmato a risposta pronta.
-        stopMic();
-        if (conversationTimeout) { clearTimeout(conversationTimeout); conversationTimeout = null; }
-        setMicFeedback('Sto elaborando...');
-        showAiBubble('...');
-
-        const handled = processLocalCommand(cmd);
-        if (!handled) askClaude(cmd);
-      } else if (interim) {
-        setMicFeedback('🎤 ' + interim);
-        resetConversationTimeout();
+      if (interim && !finalT) {
+        // L'utente sta ancora parlando: rimanda l'invio
+        if (cmdDispatchTimer) { clearTimeout(cmdDispatchTimer); cmdDispatchTimer = null; }
+        return;
       }
+      if (finalT) {
+        // Segmento finale: aspetta ~1.1s di silenzio prima di inviare, nel caso
+        // arrivino altri segmenti della stessa frase.
+        if (cmdDispatchTimer) clearTimeout(cmdDispatchTimer);
+        cmdDispatchTimer = setTimeout(dispatchPendingCommand, 1100);
+      }
+    }
+
+    function dispatchPendingCommand() {
+      cmdDispatchTimer = null;
+      if (!isConversationActive) { pendingCmd = ''; return; }
+      // Rimuove l'eventuale wake word residua ("ok pico, metti un timer")
+      let cmd = pendingCmd.replace(new RegExp(WAKE_RE.source, 'ig'), '').replace(/\s+/g, ' ').trim();
+      pendingCmd = '';
+
+      // Frammento troppo corto / rumore: resta in ascolto senza disturbare Claude
+      if (cmd.replace(/[^a-zà-ù0-9]/gi, '').length < 2) { resetConversationTimeout(); startMic(); return; }
+
+      // Comando per chiudere la conversazione
+      if (/^(stop|basta|fine|chiudi|esci|silenzio|ferma tutto|grazie pico|grazie)$/i.test(cmd)) {
+        stopMic();
+        speakThen('Va bene, a presto!', endConversation);
+        return;
+      }
+
+      // Comando completo: spegni il mic ed elabora. Fermiamo il timer di inattività
+      // così non scatta mentre attendiamo la risposta (verrà riarmato dopo).
+      stopMic();
+      if (conversationTimeout) { clearTimeout(conversationTimeout); conversationTimeout = null; }
+      setMicFeedback('Sto elaborando...');
+      showAiBubble('...');
+
+      const handled = processLocalCommand(cmd);
+      if (!handled) askClaude(cmd);
+    }
+
+    function resetCmdBuffer() {
+      pendingCmd = '';
+      if (cmdDispatchTimer) { clearTimeout(cmdDispatchTimer); cmdDispatchTimer = null; }
     }
 
     // Comandi locali veloci (senza passare da Claude): risposta istantanea
