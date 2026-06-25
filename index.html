@@ -102,6 +102,21 @@
       transition: transform 0.3s ease;
     }
 
+    button.circle-btn.talk-active {
+      background: #e53935;
+      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.35), 0 4px 12px rgba(0, 0, 0, 0.4);
+      animation: talkPulse 1.2s infinite alternate;
+    }
+
+    button.circle-btn.talk-active:hover {
+      background: #d32f2f;
+    }
+
+    @keyframes talkPulse {
+      from { box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.30), 0 4px 12px rgba(0, 0, 0, 0.4); }
+      to { box-shadow: 0 0 0 6px rgba(229, 57, 53, 0.12), 0 4px 12px rgba(0, 0, 0, 0.4); }
+    }
+
     .autocomplete-wrapper {
       position: relative;
       display: inline-block;
@@ -1058,19 +1073,28 @@
       cursor: pointer;
     }
 
-    /* Rotazione forzata: simula il landscape su un dispositivo bloccato in verticale.
-       rotate(-90deg) + top:100% riempie esattamente il viewport (W<->H scambiate). */
+    /* Rotazione forzata: simula il landscape su un dispositivo bloccato.
+       Le dimensioni in px (viewport reali) sono impostate via JS per evitare
+       l'ambiguità di vw/vh quando il body diventa più largo del viewport. */
     body.force-rotate {
       position: fixed;
-      top: 100%;
-      left: 0;
       right: auto;
       bottom: auto;
-      width: 100vh;
-      height: 100vw;
+      min-height: 0;
       transform-origin: left top;
-      transform: rotate(-90deg);
       overflow: hidden;
+    }
+
+    body.force-rotate.rot-ccw {
+      top: 100%;
+      left: 0;
+      transform: rotate(-90deg);
+    }
+
+    body.force-rotate.rot-cw {
+      top: 0;
+      left: 100%;
+      transform: rotate(90deg);
     }
 
     /* Layout orizzontale quando si forza il landscape (a prescindere dalla media query) */
@@ -1191,6 +1215,12 @@
   </div>
 
   <div id="Settings" class="app-toolbar">
+    <button class="circle-btn" id="talkBtn" title="Parla con Pico" onclick="pushToTalk()">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M5 3a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0V3z" />
+        <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z" />
+      </svg>
+    </button>
     <button class="circle-btn" title="Alarms & Timers" onclick="openAlarms()">
       <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
         <path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z" />
@@ -1238,8 +1268,8 @@
     <div class="smart-display-bottom weather-part delay-2">
       <div class="date-part" id="currentDate"></div>
       <div class="voice-hint-part"
-        style="font-size: 1rem; opacity: 0.6; margin-top: 5px; font-weight: normal; text-align: center;">Pronuncia "Ok
-        Pico" per le interazioni vocali</div>
+        style="font-size: 1rem; opacity: 0.6; margin-top: 5px; font-weight: normal; text-align: center;">Tocca il
+        microfono o di' "Ok Pico" per parlare</div>
     </div>
   </div>
 
@@ -1270,7 +1300,8 @@
         <select id="orientSelect" class="mini-select" onchange="setOrientationMode(this.value)">
           <option value="auto">Auto</option>
           <option value="portrait">Verticale</option>
-          <option value="landscape">Orizzontale</option>
+          <option value="landscape-90">Orizzontale 90°</option>
+          <option value="landscape-270">Orizzontale 270°</option>
         </select>
       </div>
 
@@ -2197,22 +2228,41 @@
     // Modalità: 'auto' segue il dispositivo; 'portrait'/'landscape' forzano la vista.
     // Se forziamo un orientamento diverso da quello fisico del dispositivo
     // (es. telefono con rotazione automatica disattivata), ruotiamo via CSS.
+    // 'auto' segue il dispositivo; 'portrait', 'landscape-90', 'landscape-270' forzano la vista
     let orientationMode = localStorage.getItem('orientationMode') || 'auto';
+    if (orientationMode === 'landscape') orientationMode = 'landscape-90'; // migrazione vecchio valore
 
     function applyOrientation() {
+      const b = document.body;
       const deviceLandscape = window.matchMedia('(orientation: landscape)').matches;
+      const wantLandscape = orientationMode === 'landscape-90' || orientationMode === 'landscape-270';
+      const wantPortrait = orientationMode === 'portrait';
+
       let landscape;
-      if (orientationMode === 'portrait') landscape = false;
-      else if (orientationMode === 'landscape') landscape = true;
+      if (wantLandscape) landscape = true;
+      else if (wantPortrait) landscape = false;
       else landscape = deviceLandscape;
 
-      document.body.classList.toggle('landscape', landscape);
-      document.body.classList.toggle('portrait', !landscape);
+      b.classList.toggle('landscape', landscape);
+      b.classList.toggle('portrait', !landscape);
 
-      // Rotazione fisica solo quando l'orientamento voluto ≠ quello del dispositivo
-      const needRotate = (orientationMode === 'landscape' && !deviceLandscape) ||
-                         (orientationMode === 'portrait' && deviceLandscape);
-      document.body.classList.toggle('force-rotate', needRotate);
+      // Ruota fisicamente solo se l'orientamento voluto ≠ quello del dispositivo
+      const needRotate = (landscape && !deviceLandscape) || (wantPortrait && deviceLandscape);
+      b.classList.toggle('force-rotate', needRotate);
+
+      // Verso della rotazione: 90° (orario) oppure 270° (antiorario)
+      const cw = orientationMode === 'landscape-90';
+      b.classList.toggle('rot-cw', needRotate && cw);
+      b.classList.toggle('rot-ccw', needRotate && !cw);
+
+      // Dimensioni in px del viewport reale (scambiate) per la vista ruotata
+      if (needRotate) {
+        b.style.width = window.innerHeight + 'px';
+        b.style.height = window.innerWidth + 'px';
+      } else {
+        b.style.width = '';
+        b.style.height = '';
+      }
     }
 
     function setOrientationMode(mode) {
@@ -2481,6 +2531,25 @@ REGOLE IMPORTANTI:
       hideAiBubble();
       window.speechSynthesis && window.speechSynthesis.cancel();
       if (conversationTimeout) clearTimeout(conversationTimeout);
+      const tb = document.getElementById('talkBtn');
+      if (tb) tb.classList.remove('talk-active');
+    }
+
+    // Push-to-talk: avvia la conversazione col tap, senza dover dire "Ok Pico"
+    function pushToTalk() {
+      if (micDisabled || !recognition) {
+        speak("Microfono non disponibile. Controlla i permessi del browser.");
+        return;
+      }
+      if (isConversationActive) {
+        endConversation();
+        return;
+      }
+      startConversation();
+      setMicFeedback('Dimmi pure...');
+      const tb = document.getElementById('talkBtn');
+      if (tb) tb.classList.add('talk-active');
+      try { recognition.start(); } catch (e) {}
     }
 
     function resetConversationTimeout() {
