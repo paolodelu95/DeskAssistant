@@ -184,13 +184,13 @@
     }
 
     .time-part {
-      font-size: 6rem;
+      font-size: clamp(3.2rem, 15vw, 6rem);
       font-weight: 300;
       opacity: 0.9;
     }
 
     .city-part {
-      font-size: 3rem;
+      font-size: clamp(2rem, 9vw, 3rem);
       font-weight: bold;
       text-align: left;
       line-height: 1.1;
@@ -205,36 +205,93 @@
     }
 
     .temp-part {
-      font-size: 2rem;
+      font-size: clamp(1.5rem, 6vw, 2rem);
       font-weight: bold;
     }
 
     .desc-part {
-      font-size: 2rem;
+      font-size: clamp(1.4rem, 6vw, 2rem);
       font-weight: 300;
     }
 
     .date-part {
-      font-size: 2rem;
+      font-size: clamp(1.4rem, 6vw, 2rem);
       font-weight: bold;
       opacity: 0.9;
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 600px) {
       .fullscreen-weather {
-        padding: 20px;
+        padding: 16px;
+        padding-top: calc(16px + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
       }
 
-      .city-part {
-        font-size: 3.5rem;
+      /* Toolbar più piccola e allineata in alto a destra senza coprire l'orologio */
+      .app-toolbar {
+        top: calc(12px + env(safe-area-inset-top, 0px));
+        right: 12px;
+        gap: 10px;
       }
 
-      .temp-part {
-        font-size: 3rem;
+      button.circle-btn {
+        width: 40px;
+        height: 40px;
       }
 
-      .desc-part {
-        font-size: 1.5rem;
+      .info-group {
+        gap: 12px;
+      }
+
+      /* Capsule timer/musica: rispettano notch e barra inferiore */
+      .top-capsule-container {
+        top: calc(12px + env(safe-area-inset-top, 0px));
+      }
+
+      .bottom-capsule-container {
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+
+      /* Schermata selezione città: va a capo invece di sforare */
+      .header-row {
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 92vw;
+      }
+
+      #cityInput {
+        width: auto;
+        flex: 1 1 60%;
+        min-width: 0;
+      }
+
+      /* Modali e picker compatti su schermi stretti */
+      .modal-body {
+        padding: 16px;
+      }
+
+      .touch-picker {
+        padding: 14px;
+      }
+
+      .picker-row {
+        gap: 6px;
+      }
+
+      .picker-val {
+        font-size: 2.2rem;
+        min-width: 42px;
+      }
+
+      .picker-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+        padding: 0;
+      }
+
+      .section-title h3 {
+        font-size: 1.6rem;
       }
     }
 
@@ -275,6 +332,8 @@
       padding: 30px;
       border-radius: 12px;
       width: 300px;
+      max-width: 90vw;
+      box-sizing: border-box;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       color: #333;
       text-align: center;
@@ -342,21 +401,25 @@
     }
 
     .add-btn {
-      background: #eee;
-      color: #333;
+      background: #007e9e;
+      color: #fff;
       border-radius: 50%;
       width: 40px;
       height: 40px;
-      font-size: 1.5rem;
+      font-size: 1.6rem;
+      line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       border: none;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 126, 158, 0.35);
+      transition: background 0.2s ease, transform 0.15s ease;
     }
 
     .add-btn:hover {
-      background: #ddd;
+      background: #006985;
+      transform: scale(1.08);
     }
 
     .divider {
@@ -375,9 +438,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #f9f9f9;
-      padding: 15px 20px;
-      border-radius: 12px;
+      background: #f1f4f7;
+      padding: 14px 18px;
+      border-radius: 14px;
     }
 
     .alarm-time {
@@ -393,18 +456,18 @@
     }
 
     .timer-pill {
-      background: rgba(40, 40, 40, 0.1);
-      color: #333;
-      padding: 12px 20px;
-      border-radius: 20px;
+      background: #f1f4f7;
+      color: #1f6d85;
+      padding: 12px 18px;
+      border-radius: 14px;
       cursor: pointer;
-      font-size: 1.2rem;
-      font-weight: bold;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      transition: all 0.2s ease;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: 2px solid transparent;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .delete-btn {
@@ -431,8 +494,14 @@
     }
 
     .timer-pill:hover {
-      background: rgba(0, 0, 0, 0.2);
-      transform: scale(1.05);
+      background: #007e9e;
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 126, 158, 0.3);
+    }
+
+    .timer-pill:hover .delete-btn {
+      color: rgba(255, 255, 255, 0.85);
     }
 
     .timer-active-large {
@@ -576,11 +645,113 @@
     }
 
     .stations-container {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .station-chip {
+      padding: 14px 10px;
+      border-radius: 14px;
+      background: #f1f4f7;
+      color: #44525c;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      user-select: none;
+      text-align: center;
+    }
+
+    .station-chip:hover {
+      background: #e6ebf0;
+      transform: translateY(-1px);
+    }
+
+    .station-chip.active {
+      background: #007e9e;
+      color: #fff;
+      border-color: #007e9e;
+      box-shadow: 0 6px 16px rgba(0, 126, 158, 0.35);
+    }
+
+    .play-btn {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #00a8d0, #007e9e);
+      color: #fff;
+      font-size: 2rem;
+      display: inline-flex;
+      align-items: center;
       justify-content: center;
-      gap: 30px;
-      margin-bottom: 20px;
+      cursor: pointer;
+      margin: 4px auto 24px;
+      padding: 0;
+      box-shadow: 0 8px 24px rgba(0, 126, 158, 0.45);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.06);
+      background: linear-gradient(135deg, #00a8d0, #007e9e);
+      box-shadow: 0 10px 28px rgba(0, 126, 158, 0.55);
+    }
+
+    .play-btn:active {
+      transform: scale(0.97);
+    }
+
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      margin-top: 4px;
+    }
+
+    .volume-row svg {
+      flex: 0 0 auto;
+      color: #9aa6b0;
+    }
+
+    .range-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e0e5ea;
+      outline: none;
+      padding: 0;
+      margin: 0;
+      border: none;
+      cursor: pointer;
+    }
+
+    .range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #007e9e;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .range-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #007e9e;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
     .weather-icon {
@@ -621,31 +792,45 @@
     /* Switch Style */
     .touch-picker {
       display: none;
-      background: #fff;
-      border: 1px solid #ccc;
+      background: #fafbfc;
+      border: 1px solid #e6eaee;
       padding: 20px;
-      border-radius: 15px;
+      border-radius: 18px;
       margin-bottom: 20px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
     }
 
     .picker-col {
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 8px;
     }
 
     .picker-btn {
-      font-size: 2rem;
-      background: transparent;
+      font-size: 1.4rem;
+      background: #eef1f4;
       border: none;
       cursor: pointer;
-      color: #888;
-      padding: 0 10px;
+      color: #007e9e;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      padding: 0;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, transform 0.1s ease;
     }
 
     .picker-btn:hover {
-      color: #333;
+      background: #dbe3ea;
+      color: #006985;
+    }
+
+    .picker-btn:active {
+      transform: scale(0.92);
     }
 
     .picker-val {
@@ -653,6 +838,12 @@
       font-weight: bold;
       min-width: 60px;
       text-align: center;
+    }
+
+    /* I due punti tra le colonne non devono avere la larghezza minima delle cifre */
+    .picker-row > .picker-val {
+      min-width: auto;
+      padding: 0 2px;
     }
 
     .picker-row {
@@ -890,10 +1081,10 @@
 
   <div id="headerRow" class="header-row" style="display:flex;">
     <div class="autocomplete-wrapper">
-      <input type="text" id="cityInput" placeholder="Enter city name" autocomplete="off">
+      <input type="text" id="cityInput" placeholder="Inserisci la città" autocomplete="off">
       <ul id="suggestionsList" class="suggestions-list" style="display: none;"></ul>
     </div>
-    <button onclick="getWeather()">Select city</button>
+    <button onclick="getWeather()">Cerca</button>
     <button id="geoBtn" onclick="useMyLocation()" title="Usa la mia posizione" aria-label="Usa la mia posizione">📍</button>
   </div>
 
@@ -918,10 +1109,10 @@
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <span class="close-modal" onclick="closeSettings()">&times;</span>
-      <h2>Settings</h2>
+      <h2>Impostazioni</h2>
 
       <div class="setting-item">
-        <span>Photo Slideshow</span>
+        <span>Slideshow foto</span>
         <label class="switch" title="Toggle Slideshow">
           <input type="checkbox" id="slideshowToggle" onchange="toggleSlideshow(this)" checked>
           <span class="slider"></span>
@@ -929,7 +1120,7 @@
       </div>
 
       <div class="setting-item">
-        <span>Compact View (Mobile)</span>
+        <span>Vista compatta</span>
         <label class="switch" title="Toggle Compact Mode">
           <input type="checkbox" id="compactModeToggle" onchange="toggleCompactMode(this)">
           <span class="slider"></span>
@@ -937,7 +1128,7 @@
       </div>
 
       <button class="btn-outline" onclick="useMyLocation()" style="width:100%; margin-top:10px;">📍 Usa la mia posizione</button>
-      <button class="btn-outline" onclick="changeCity()" style="width:100%; margin-top:10px;">Change City</button>
+      <button class="btn-outline" onclick="changeCity()" style="width:100%; margin-top:10px;">Cambia città</button>
 
       <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
         <label style="display:block; font-weight:bold; margin-bottom:8px; font-size:0.95rem;">🤖 Claude API Key</label>
@@ -953,13 +1144,13 @@
   <div id="alarmsModal" class="modal">
     <div class="modal-content large-modal">
       <div class="modal-header">
-        <h2 style="margin:0;">Alarms & Timers</h2>
+        <h2 style="margin:0;">Sveglie e Timer</h2>
         <span class="close-modal" onclick="closeAlarms()" style="position:relative; top:0; right:0;">&times;</span>
       </div>
       <div class="modal-body">
 
         <div class="section-title">
-          <h3>Alarms</h3>
+          <h3>Sveglie</h3>
           <button class="add-btn" onclick="openAlarmPicker()">+</button>
         </div>
 
@@ -977,7 +1168,7 @@
               <button class="picker-btn" onclick="adjPicker('alarmM', -1)">&#9660;</button>
             </div>
           </div>
-          <button class="picker-confirm" onclick="confirmAlarm()">Save Alarm</button>
+          <button class="picker-confirm" onclick="confirmAlarm()">Salva sveglia</button>
         </div>
 
         <div id="alarmsList" class="list-container"></div>
@@ -985,7 +1176,7 @@
         <div class="divider"></div>
 
         <div class="section-title">
-          <h3>Timers</h3>
+          <h3>Timer</h3>
           <button class="add-btn" onclick="openTimerPicker()">+</button>
         </div>
 
@@ -1012,7 +1203,7 @@
               <button class="picker-btn" onclick="adjPicker('timerS', -1)">&#9660;</button>
             </div>
           </div>
-          <button class="picker-confirm" onclick="confirmTimer()">Save Timer</button>
+          <button class="picker-confirm" onclick="confirmTimer()">Salva timer</button>
         </div>
 
         <div id="activeTimerContainer"></div>
@@ -1025,28 +1216,29 @@
   <div id="musicModal" class="modal">
     <div class="modal-content" style="width: 400px; padding: 0;">
       <div class="modal-header">
-        <h2 style="margin:0;">Music Center</h2>
+        <h2 style="margin:0;">Musica</h2>
         <span class="close-modal" onclick="closeMusic()" style="position:relative; top:0; right:0;">&times;</span>
       </div>
       <div class="modal-body" style="text-align: center;">
 
         <div class="stations-container">
-          <div class="timer-pill" id="station-chill" onclick="setStation('chill')">Chillout</div>
-          <div class="timer-pill" id="station-ambient" onclick="setStation('ambient')">Ambient</div>
-          <div class="timer-pill" id="station-jazz" onclick="setStation('jazz')">Jazz</div>
-          <div class="timer-pill" id="station-lush" onclick="setStation('lush')">Lush</div>
-          <div class="timer-pill" id="station-deepspace" onclick="setStation('deepspace')">DeepSpace</div>
-          <div class="timer-pill" id="station-space" onclick="setStation('space')">SpaceStation</div>
+          <div class="station-chip" id="station-chill" onclick="setStation('chill')">Chillout</div>
+          <div class="station-chip" id="station-ambient" onclick="setStation('ambient')">Ambient</div>
+          <div class="station-chip" id="station-jazz" onclick="setStation('jazz')">Jazz</div>
+          <div class="station-chip" id="station-lush" onclick="setStation('lush')">Lush</div>
+          <div class="station-chip" id="station-deepspace" onclick="setStation('deepspace')">DeepSpace</div>
+          <div class="station-chip" id="station-space" onclick="setStation('space')">SpaceStation</div>
         </div>
 
-        <button id="playPauseBtn" class="circle-btn"
-          style="width: 100px; height: 100px; font-size: 2.5rem; margin: 30px auto;" onclick="toggleMusic()">
-          &#9658;
-        </button>
+        <button id="playPauseBtn" class="play-btn" onclick="toggleMusic()">&#9658;</button>
 
-        <div style="margin-top: 20px; padding: 0 40px;">
-          <label style="display:block; margin-bottom: 10px; font-weight: bold; font-size: 1.2rem;">Volume</label>
-          <input type="range" id="musicVolume" min="0" max="1" step="0.05" style="width: 100%; cursor: pointer;">
+        <div class="volume-row">
+          <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/>
+            <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.61 3.89l.706.706z"/>
+            <path d="M8.707 11.182A4.486 4.486 0 0 0 10.025 8a4.486 4.486 0 0 0-1.318-3.182L8 5.525A3.489 3.489 0 0 1 9.025 8 3.49 3.49 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/>
+          </svg>
+          <input type="range" id="musicVolume" min="0" max="1" step="0.05" class="range-slider">
         </div>
       </div>
     </div>
@@ -1209,7 +1401,7 @@
         if (latitude === undefined || longitude === undefined) {
           const city = document.getElementById('cityInput').value.trim();
           if (!city) {
-            alert("Please enter a city name.");
+            alert("Inserisci il nome di una città.");
             return;
           }
 
@@ -1218,7 +1410,7 @@
           const geoData = await geoRes.json();
 
           if (!geoData.results || geoData.results.length === 0) {
-            alert("City not found.");
+            alert("Città non trovata.");
             return;
           }
 
@@ -1273,7 +1465,7 @@
 
       } catch (error) {
         console.error(error);
-        alert("Error fetching weather data.");
+        alert("Errore nel recupero dei dati meteo.");
       }
     }
 
@@ -1534,7 +1726,7 @@
       });
     }
     function removeAlarm(idx) {
-      if (confirm("Delete this alarm?")) {
+      if (confirm("Eliminare questa sveglia?")) {
         alarms.splice(idx, 1);
         saveAlarms();
         renderAlarms();
@@ -1585,7 +1777,7 @@
     }
 
     function removeTimer(idx) {
-      if (confirm("Delete this saved timer?")) {
+      if (confirm("Eliminare questo timer salvato?")) {
         timers.splice(idx, 1);
         saveTimers();
         renderTimers();
@@ -1625,7 +1817,7 @@
       renderTimers();
     }
 
-    function cancelTimerPrompt() { if (confirm("Stop the nearest active timer?")) stopTimer(); }
+    function cancelTimerPrompt() { if (confirm("Fermare il timer attivo più vicino?")) stopTimer(); }
 
     // --- MUSIC LOGIC ---
     let musicData = JSON.parse(localStorage.getItem('musicSettings')) || { station: 'chill', volume: 0.5 };
@@ -1673,8 +1865,7 @@
       ['chill', 'ambient', 'jazz', 'lush', 'deepspace', 'space'].forEach(k => {
         const btn = document.getElementById('station-' + k);
         if (!btn) return;
-        if (k === musicData.station) btn.style.background = '#007e9e';
-        else btn.style.background = 'rgba(40, 40, 40, 0.1)';
+        btn.classList.toggle('active', k === musicData.station);
       });
     }
 
