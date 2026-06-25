@@ -2,7 +2,7 @@
   "name": "Pico - Desk Assistant",
   "short_name": "Pico",
   "description": "Il tuo assistente da cucina intelligente",
-  "start_url": "/DeskAssistant/DeskAssistant.html",
+  "start_url": "/DeskAssistant/",
   "scope": "/DeskAssistant/",
   "display": "fullscreen",
   "orientation": "portrait",
