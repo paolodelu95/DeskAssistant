@@ -894,6 +894,7 @@
       <ul id="suggestionsList" class="suggestions-list" style="display: none;"></ul>
     </div>
     <button onclick="getWeather()">Select city</button>
+    <button id="geoBtn" onclick="useMyLocation()" title="Usa la mia posizione" aria-label="Usa la mia posizione">📍</button>
   </div>
 
   <div id="weatherResult" class="fullscreen-weather" style="display:none;">
@@ -935,6 +936,7 @@
         </label>
       </div>
 
+      <button class="btn-outline" onclick="useMyLocation()" style="width:100%; margin-top:10px;">📍 Usa la mia posizione</button>
       <button class="btn-outline" onclick="changeCity()" style="width:100%; margin-top:10px;">Change City</button>
 
       <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
@@ -1347,6 +1349,61 @@
         document.body.style.background = '#f0f4f8';
         document.body.style.color = '#333';
       }
+    }
+
+    // --- GEOLOCALIZZAZIONE ---
+    function setGeoBtnLoading(loading) {
+      const btn = document.getElementById('geoBtn');
+      if (!btn) return;
+      if (loading) {
+        if (!btn.dataset.label) btn.dataset.label = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '⏳';
+      } else {
+        btn.disabled = false;
+        if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
+      }
+    }
+
+    function useMyLocation(isAuto = false) {
+      if (!('geolocation' in navigator)) {
+        if (!isAuto) alert("La geolocalizzazione non è supportata da questo dispositivo.");
+        return;
+      }
+
+      closeSettings();
+      setGeoBtnLoading(true);
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          let name = "La mia posizione";
+          // Reverse geocoding "best effort": se fallisce, il meteo funziona comunque con le coordinate
+          try {
+            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=it`);
+            const data = await res.json();
+            name = data.city || data.locality || data.principalSubdivision || name;
+          } catch (e) {
+            console.warn("Reverse geocoding non riuscito:", e);
+          }
+          setGeoBtnLoading(false);
+          getWeather(latitude, longitude, name);
+        },
+        (err) => {
+          console.warn("Errore geolocalizzazione:", err);
+          setGeoBtnLoading(false);
+          // Fallback: mostra comunque l'input manuale
+          document.getElementById('headerRow').style.display = 'flex';
+          if (!isAuto) {
+            let msg = "Non riesco a rilevare la posizione.";
+            if (err.code === 1) msg = "Permesso di posizione negato. Inserisci la città manualmente o abilita la geolocalizzazione nelle impostazioni del browser.";
+            else if (err.code === 2) msg = "Posizione non disponibile al momento. Inserisci la città manualmente.";
+            else if (err.code === 3) msg = "Tempo scaduto nel rilevamento della posizione. Riprova.";
+            alert(msg);
+          }
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+      );
     }
 
     function toggleSlideshow(checkbox) {
@@ -1812,6 +1869,12 @@
         const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (tempCtx.state === 'suspended') tempCtx.resume();
       } catch (e) {}
+
+      // Rilevamento automatico posizione al primo avvio (nessuna città salvata).
+      // Lanciato dopo il tap così il prompt dei permessi è legato a un gesto utente.
+      if (!localStorage.getItem('lastCity')) {
+        useMyLocation(true);
+      }
     }
 
     // --- CLAUDE API KEY ---
