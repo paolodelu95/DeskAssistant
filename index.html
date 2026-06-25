@@ -1087,6 +1087,31 @@
       .modal-body {
         max-height: 80vh;
       }
+
+      /* Telefono girato: vista meteo orizzontale che sfrutta la larghezza */
+      body.landscape .fullscreen-weather {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      body.landscape .smart-display-top {
+        margin-top: 0;
+      }
+
+      body.landscape .smart-display-bottom {
+        align-items: flex-end;
+        text-align: right;
+        margin-bottom: 0;
+        max-width: 48%;
+      }
+
+      body.landscape .time-part {
+        font-size: clamp(3rem, 9vw, 5.5rem);
+      }
+
+      body.landscape .city-part {
+        font-size: clamp(1.6rem, 4.5vw, 2.6rem);
+      }
     }
   </style>
 </head>
@@ -2097,6 +2122,21 @@
     updateClock();
     setInterval(updateClock, 1000);
     initMusic();
+
+    // --- ORIENTAMENTO: adatta la vista a come è tenuto il telefono ---
+    function applyOrientation() {
+      const landscape = window.matchMedia('(orientation: landscape)').matches;
+      document.body.classList.toggle('landscape', landscape);
+      document.body.classList.toggle('portrait', !landscape);
+    }
+    try {
+      const mqOrient = window.matchMedia('(orientation: landscape)');
+      if (mqOrient.addEventListener) mqOrient.addEventListener('change', applyOrientation);
+      else if (mqOrient.addListener) mqOrient.addListener(applyOrientation); // browser più vecchi
+    } catch (e) {}
+    window.addEventListener('orientationchange', applyOrientation);
+    window.addEventListener('resize', applyOrientation);
+    applyOrientation();
 
     function startupPlay() {
       const overlay = document.getElementById('interactionOverlay');
