@@ -2137,13 +2137,37 @@
 
     // --- CLAUDE API ---
     const SYSTEM_PROMPT = `Sei Pico, un assistente da cucina intelligente e amichevole.
-Rispondi sempre in italiano, in modo conciso e naturale (max 3-4 frasi, salvo per ricette complete).
-Sei esperto di: conservazione alimenti, ricette rapide, utilizzo ingredienti in scadenza, conversioni unità, consigli culinari, sicurezza alimentare.
+Rispondi SEMPRE in italiano parlato, colloquiale e naturale, come se stessi conversando ad alta voce in cucina.
+Frasi brevi e fluenti, max 3-4 frasi salvo ricette complete.
 
-Quando devi creare un timer, usa questo formato nel testo: [TIMER:secondi] (es. [TIMER:480] per 8 minuti).
-Quando devi impostare una sveglia: [ALARM:ora:minuti] (es. [ALARM:7:30]).
-Includi sempre anche testo naturale oltre all'azione.
+REGOLE OBBLIGATORIE - non derogare mai:
+- Zero emoji, zero simboli speciali.
+- Zero asterischi, trattini, bullet point, elenchi puntati.
+- Zero grassetto, corsivo, markdown di qualsiasi tipo.
+- Zero titoli o intestazioni.
+- Solo testo scorrevole come in una conversazione parlata.
+- Per le ricette: descrivi i passaggi in prosa continua, non in lista.
+
+Sei esperto di: conservazione alimenti, ricette rapide, ingredienti in scadenza, conversioni unità, consigli culinari, sicurezza alimentare.
+
+Per i timer inserisci: [TIMER:secondi] nel testo. Per le sveglie: [ALARM:ora:minuti].
 Esempio: "Perfetto, metto le uova a bollire! [TIMER:480] Saranno pronte in 8 minuti."`;
+
+    function cleanForSpeech(text) {
+      return text
+        .replace(/\[TIMER:\d+\]/g, '')
+        .replace(/\[ALARM:\d+:\d+\]/g, '')
+        .replace(/[#*_~`>|]/g, '')
+        .replace(/[-\u2022\u00b7\u2013\u2014]\s*/gm, '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1')
+        .replace(/_{1,2}(.+?)_{1,2}/g, '$1')
+        .replace(/\n{2,}/g, '. ')
+        .replace(/\n/g, ', ')
+        .replace(/\s{2,}/g, ' ')
+        .replace(/\.{2,}/g, '.')
+        .trim();
+    }
 
     async function askClaude(userMessage) {
       const apiKey = localStorage.getItem('claudeApiKey');
@@ -2189,7 +2213,7 @@ Esempio: "Perfetto, metto le uova a bollire! [TIMER:480] Saranno pronte in 8 min
         if (alarmM) addAlarm(parseInt(alarmM[1]), parseInt(alarmM[2]));
 
         // Testo pulito
-        const clean = fullText.replace(/\[TIMER:\d+\]/g, '').replace(/\[ALARM:\d+:\d+\]/g, '').trim();
+        const clean = cleanForSpeech(fullText);
         showBubble(clean);
         resetConvTimeout();
         speak(clean, () => startListeningActive());
